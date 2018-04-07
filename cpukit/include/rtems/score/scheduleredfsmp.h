@@ -20,10 +20,33 @@
 #include <rtems/score/scheduler.h>
 #include <rtems/score/scheduleredf.h>
 #include <rtems/score/schedulersmp.h>
+// added by zb
+#include <rtems/score/chainimpl.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct{
+	Chain_Node Chain;
+  /**
+  * @brief b(Ti) in pd2
+  */
+  int64_t b;
+  /**
+  * @brief r(Ti) in pd2
+  */
+  int64_t r;
+	/**
+	* @brief d(Ti) in pd2
+	*/
+  int64_t d;
+	/**
+	 * @brief group_deadline(Ti) in pd2
+	 */
+  int64_t g;	
+} subtask_node;
+
 
 /**
  * @defgroup ScoreSchedulerSMPEDF EDF Priority SMP Scheduler
@@ -50,7 +73,50 @@ typedef struct {
    * processor index plus one as the ready queue index.
    */
   uint32_t ready_queue_index;
+
+  /**
+   * @brief the subtask sequence in pd2 scheduling algorithm
+   */
+  Chain_Control subtask_seq;
+
+	subtask_node * currrent;
 } Scheduler_EDF_SMP_Node;
+
+RTEMS_INLINE_ROUTINE void _Scheduler_EDF_SMP_Subtask_Chain_initialize_empty(
+	Chain_Control *the_chain
+)
+{
+	_Chain_Initialize_empty(the_chain);
+};
+
+RTEMS_INLINE_ROUTINE void _Scheduler_EDF_SMP_Subtask_Chain_append(
+	Chain_Control *the_chain,
+	Chain_Node *the_node
+);
+
+RTEMS_INLINE_ROUTINE void _Scheduler_EDF_SMP_Subtask_Chain_initialize(
+	Chain_Control *the_chain
+)
+{
+		
+	_Scheduler_EDF_SMP_Subtask_Chain_initialize_empty(the_chain);
+	/* PD2 algorithm here */
+  
+	for ( int i = 0; i < quantum_num; ++i){
+		_Scheduler_EDF_SMP_Subtask_Chain_append( the_chain, the_node)
+	}
+};
+
+RTEMS_INLINE_ROUTINE void _Scheduler_EDF_SMP_Subtask_Chain_next(
+	const CHain_Node *the_node
+);
+
+RTEMS_INLINE_ROUTINE void _Scheduler_EDF_SMP_Subtask_Chain_reset(
+	const Chain_Control *the_chain
+);
+
+
+
 
 typedef struct {
   /**
