@@ -11,21 +11,23 @@
 #include "rtems/score/Threadimpl.h"
 
 
-typedef void (*ServantRunnable)(
-  void *data_i2c,
-  size_t size_i2c
+typedef void (*IServantRunnable)(
+  void *data_isc,
+  size_t *size_isc
 );
 
 typedef void (*CServantRunnable)(
-  void *data_i2c,
-  size_t size_i2c,
-  void *data_c2o,
-  size_t *size_c2o
+  tid_t source_id,  /* The message sender */
+  void *data_cri,
+  size_t size_cri,
+  tid_t *target_id,  /* The target task id of generated data */
+  void *data_cso,
+  size_t *size_cso
 );
 
 typedef void (*OServantRunnable)(
-  void *data_c2o,
-  size_t size_c2o
+  void *data_orc,
+  size_t size_orc
 );
 
 
@@ -34,7 +36,26 @@ struct _Servent{
   rtems_id id; /* timer id, only used in I-servant and O-servant*/
 }Servant;
 
+
+/* This function must be called in timeslice function to obtain the subsequent subtasks timing information */
+tid_t _get_task_id()
+{
+  /* Some kernel including files must be included in this file,
+   * Rather than including them in the pspm.h file */
+  Thread_Control * executing;
+  Scheduler_Node * base_node;
+  Scheduler_EDF_SMP_Node * node;
+  /* rtems/score/Percpu.h */
+  executing = __Thread_Executing;
+  /* rtems/score/Threadimpl.h */
+  base_node = _Thread_Scheduler_get_home_node( executing );
+  node = _Scheduler_EDF_SMP_node_downcast( base_node );
+
+  return node->task_node.id;
+}
+
 /* Type of subtasks
+ * This structure must be one of the structure in SMP_EDF scheduler
  * */
 typedef struct _Subtask_Node{
   Chain_Node Chain; /* subtasks are managed with chain structure  */
@@ -64,6 +85,7 @@ typedef int32_t tid_t;
 
 /* The structure for tasks in multi-core PSPM
  * It is one member of the scheduler node Scheduler_EDF_SMP_Node
+ * This structure must be one of the structure in SMP_EDF scheduler
  * */
 typedef struct _Task_Node{
   rtems_chain_node Chain;     /* chain for tasks */
@@ -90,9 +112,12 @@ typedef struct _Message{
 }Message_t;
 
 /* One global data structure for saving task information
+ * This variable must be in the including file of kernel
+ * For being invoked in default_tick function
  * */
 extern PSPM_SMP pspm_smp_task_manager;
 
+/* This type must be in the same file pspm_smp_task_manager */
 typedef struct _PSPM_SMP{
   Chain_Control Task_Node_queue; /* The queue of task node created by user for saving information */
   Task_Node ** Task_Node_array;  /* The array of task node created by user for searching node info*/
@@ -128,33 +153,6 @@ void pspm_smp_servant_create(
   CServantRunnable c_runnable,
   OServantRunnable o_runnable
 );
-
-
-/* @brief PSPM SMP Message send
- * User API, which can be used to communicating with other task
- * The message are always sent to the comp_queue of specific task
- * @param[in] task_id is the id of target task
- * @param[in] buff is the start address of sented message
- * @param[in] size is the length of message
- * */
-void pspm_smp_message_send(
-  tid_t task_id,
-  const void *buff,
-  size_t size
-)
-
-/* @brief PSPM SMP Message receive
- * User API, which can be used to communicating with other task
- * The message is received from the comp_queue of current task
- * @param[out] return the task id of message sender
- * @param[in] buff is the start address of sented message
- * @param[in] size is the length of message
- * */
-void pspm_smp_message_receive(
-  tid_t * task_id,
-  void *buff,
-  size_t *size
-)
 
 
 

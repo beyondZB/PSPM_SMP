@@ -6,6 +6,9 @@
  * */
 #include "pspm.h"
 
+/* The Message data length is set to 1 word */
+#define MESSAGE_DATA_LENGTH 1
+
 chain_Control Task_Node_queue;
 
 PSPM_SMP pspm_smp_task_manager;
@@ -31,24 +34,23 @@ static void _pspm_smp_message_queue_OrC( tid_t id, const void *out, size_t * siz
  * @para in, return the start address of the received message
  * @para size_t, return the length of the message
  * */
-static void _pspm_smp_message_queue_CrI( void * in, size_t * size_in);
+static void _pspm_smp_message_queue_CrI( tid_t id, void * in, size_t * size_in);
 
 /* @brief C-servants send message to O-servant in the same task
  * Can only be called by C-servants
  * @para out, the start address of the sent message
  * @para size_t, the length of the message
  * */
-static void _pspm_smp_message_queue_CsO( void * out, size_t size_in);
+static void _pspm_smp_message_queue_CsO( tid_t id, void * out, size_t size_in);
 
-/* Called by C-Servant routine for obtained the task id of its beloning task */
-static inline tid_t _get_task_id();
+
 
 /* @brief Obtain the global unique id of queue
  * Obtaining the id of message queue through task id and Queue type
  *
  * @retval If this method return -1, then no such a task is found.
  * */
-inline rtems_id _message_queue_get_id(tid_t id, Queue_Type type);
+inline rtems_id _get_message_queue(tid_t id, Queue_Type type);
 
 /* @brief Called by _pspm_smp_message_queue_operations, for sending message to qid queue
  * @para qid, the id of the message queue, which is global unique
@@ -70,6 +72,213 @@ static inline Scheduler_EDF_SMP_Node * _Scheduler_EDF_SMP_Node_downcast( Schedul
 {
   return (Scheduler_EDF_SMP_Node *) node;
 }
+
+/* @brief PSPM SMP Message receive
+ * This function can be used to communicating with other task
+ * The message is received from the comp_queue of current task
+ * @param[in] id is the task id of function caller
+ * @param[out] source_id is the task id of message sender
+ * @param[out] buff is the start address of the received message
+ * @param[out] size is the length of message
+ * */
+rtems_status_code _pspm_smp_message_receive( tid_t id, tid_t *source_id, void *buff, size_t *size);
+
+/* @brief PSPM SMP Message send
+ * This function can be used to communicating with other task
+ * The message are always sent to the comp_queue of specific task
+ * @param[in] id is the id of message receiver
+ * @param[in] buff is the start address of sented message
+ * @param[in] size is the length of message
+ * */
+rtems_status_code _pspm_smp_message_send( tid_t id, const void *buff, size_t size);
+
+/* @brief Obtaining the runnable of Servant by task id and Queue type
+ * if return -1, no such a task is found.
+ * */
+void * _get_runnable(tid_t id, Queue_Type type)
+{
+  void * runnable;
+  /* No such a task exists */
+  if( pspm_smp_task_manager.Task_Node_array[id] == NULL )
+    return NULL;
+
+  switch(type){
+    case IN_QUEUE:
+      runnable = pspm_smp_task_manager.Task_Node_array[id]->i_servant.runnable;
+      break;
+    case COMP_QUEUE:
+      runnable = pspm_smp_task_manager.Task_Node_array[id]->c_servant.runnable;
+      break;
+    case OUT_QUEUE:
+      runnable = pspm_smp_task_manager.Task_Node_array[id]->o_servant.runnable;
+      break;
+    default:
+      runnable = NULL;
+  }
+  return runnable;
+}
+
+/* @brief allocate memory for message data
+ *
+ * Note: the length of memory for data is defined by MESSAGE_DATA_LENGTH
+ * */
+inline void _initialize_message( Message_t * message )
+{
+  message->address = (int32_t *)malloc(MESSAGE_DATA_LENGTH * sizeof(int32_t));
+  message->address = MESSAGE_DATA_LENGTH;
+}
+
+/* @brief constructing a I-servant routine for timer
+ * This function act as a parameter of function rtems_timer_fire_after()
+ * @param[in] id is the I-servant belonging task id
+ * */
+void _in_servant_routine( void * id )
+{
+  static Message_t message;
+  rtems_id qid;
+  rtems_id id = *(rtems_id *)task_id;
+  IServantRunnable runnable;
+
+  if((runnable = (IServantRunnable)_get_runnable(id, IN_QUEUE)) == NULL)
+    print("Error: No such a task (tid = %d) when creating a I-Servant\n", id);
+  else {
+    qid = _get_message_queue(id, IN_QUEUE);
+    _initialize_message(&message);
+    runnable( & message.address, &message.size );
+    if(message.size > MESSAGE_DATA_LENGTH){
+      print("Error: Message size in I-Servant exceed the MESSAGE_DATA_LENGTH\n");
+      /* Warning: Resize the message size */
+      message.size = MESSAGE_DATA_LENGTH;
+    }
+    /* Send message to the IN_QUEUE */
+    _pspm_smp_message_queue_IsC( id, message.address, message.size);
+  }
+}
+
+/* @brief constructing a O-servant routine for timer
+ * This function act as a parameter of function rtems_timer_fire_after()
+ * @param[in] id is the O-servant belonging task id
+ * */
+void _out_servant_routine( void * task_id );
+{
+  static Message_t message;
+  rtems_id qid;
+  rtems_id id = *(rtems_id *)task_id;
+  OServantRunnable runnable;
+
+  if((runnable = (OServantRunnable)_get_runnable(id, OUT_QUEUE)) == NULL)
+    print("Error: No such a task (tid = %d) when creating a O-Servant\n", id);
+  else {
+    qid = _get_message_queue(id, OUT_QUEUE);
+    /* Receive message from OUT_QUEUE */
+    _pspm_smp_message_queue_OrC( id, message.address, & message.size);
+    if(message.size > MESSAGE_DATA_LENGTH){
+      print("Error: Message size in I-Servant exceed the MESSAGE_DATA_LENGTH\n");
+      /* Warning: Resize the message size */
+      message.size = MESSAGE_DATA_LENGTH;
+    }
+    runnable( message.address, message.size );
+  }
+}
+
+/* @brief constructing a rtems periodic task entry
+ * This function act as a parameter of function rtems_task_start()
+ * */
+void _comp_servant_routine(tid_t task_id)
+{
+  static Message_t message;
+  rtems_id id = task_id;
+  /* Reading data from in_queue, and writing data to out_queue*/
+  rtems_id in_qid;
+  rtems_id out_qid;
+
+  /* timer for I-Servants and C-Servants */
+  rtems_id in_timer_id;
+  rtems_id out_timer_id;
+
+  /* Input data address and size */
+  void * in_buff;
+  size_t * in_size;
+  /* Output data address and size */
+  Message_t message;
+
+  /* Implementing the periodic semantics of rtems tasks */
+  rtems_interval period;
+  rtems_id rate_monotonic_id;
+
+  CServantRunnable runnable;
+  /* Some kernel including files must be included in this file,
+   * Rather than including them in the pspm.h file */
+  Thread_Control * executing;
+  Scheduler_Node * base_node;
+  Scheduler_EDF_SMP_Node * node;
+
+  /* If runnable == NULL, no such a task exists */
+  if((runnable = (CServantRunnable)_get_runnable(id, COMP_QUEUE)) == NULL){
+    print("Error: No such a task (tid = %d) when creating a C-Servant\n", id);
+    return;
+  }
+
+  /* rtems/score/Percpu.h */
+  executing = __Thread_Executing;
+  /* rtems/score/Threadimpl.h */
+  base_node = _Thread_Scheduler_get_home_node( executing );
+  node = _Scheduler_EDF_SMP_node_downcast( base_node );
+
+  /* Important!!!
+   * The scheduler EDF SMP node adds one pointer,
+   * which corresponds to the task node .
+   * Here, initialize the task node element in the scheduler EDF SMP node
+   * This operation connects the rtems kernel with multicore PSPM
+   * */
+  node->task_node = (pspm_smp_task_manager.Task_Node_array[id]);
+
+  /* Start the message passing */
+  in_qid = _get_message_queue(id, IN_QUEUE);
+  out_qid = _get_message_queue(id, OUT_QUEUE);
+
+  /* Allocate memory for message, its memory size is equal to the MESSAGE_DATA_LENGTH */
+  _initialize_message(&message);
+  /* Assuming that the rate monotonic object can always be created successfully */
+  rtems_rate_monotonic_create( rtems_build_name( 'P', 'E', 'R', id  ), &rate_monotonic_id);
+  period = pspm_smp_task_manager.Task_Node_array[id]->period;
+
+  /* Creating timer for I-Servant and O-Servant */
+  rtems_timer_create( rtems_build_name('T', 'I', 'I', id), &in_timer_id );
+  rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, &id);
+  rtems_timer_create( rtems_build_name('T', 'I', 'O', id), &out_timer_id );
+  rtems_timer_fire_after(out_timer_id, period, _out_servant_routine, &id);
+
+  /* Entry the while loop of a periodic rtems task */
+  while(1){
+    rtems_rate_monotonic_period(rate_monotonic_id, period);
+    /* I-C-O Servants in the same task communicating */
+    if( RTEMS_INVALID_SIZE != _pspm_smp_message_queue_CrI(id, in_buff, in_size)){
+      runnable(id, in_buffer, *in_size, &message.id, message.address, &message.size);
+      if( message.size == 0 ){
+        print("Warning: No message is sent from C-Servant to O-Servant, is that what you want?");
+      }else if( message.size > MESSAGE_DATA_LENGTH ){
+        print("Warning: Message size is greater than defined, please confirm!");
+      }else{
+        _pspm_smp_message_queue_CsO(message.id, message.address, message.size);
+      }
+    }
+
+    /* C-Servants communicate with other tasks */
+    while( RTEMS_INVALID_SIZE != _pspm_smp_message_receive(id, &source_id, in_buff, in_size) ){
+      runnable(source_id, in_buffer, *in_size, &message.id, message.address, &message.size);
+      if( message.size == 0 ){
+        print("Warning: No message is sent from C-Servant to O-Servant, is that what you want?");
+      }else if( message.size > MESSAGE_DATA_LENGTH ){
+        print("Warning: Message size is greater than defined, please confirm!");
+      }else{
+        _pspm_smp_message_send(message.id, message.address, message.size);
+      }
+    }
+  }
+}
+
+
 
 /* @brief obtain the group deadline of a subtask
  * Group deadline is one of the timing information for sorting the execution of subtasks
@@ -170,68 +379,71 @@ void pspm_smp_servant_create(
 }
 
 /* @brief PSPM SMP Message send
- * User API, which can be used to communicating with other task
+ * This function can be used to communicating with other task
  * The message are always sent to the comp_queue of specific task
- * @param[in] task_id is the id of target task
+ * @param[in] id is the id of message receiver
  * @param[in] buff is the start address of sented message
  * @param[in] size is the length of message
  * */
-void pspm_smp_message_send(
-  tid_t task_id,
+rtems_status_code _pspm_smp_message_send(
+  tid_t id,
   const void *buff,
   size_t size
 )
 {
   rtems_id comp_qid;
 
-  comp_qid = _message_queue_get_id(id, COMP_QUEUE);
-  if( comp_qid != -1 )
+  if( buff == NULL )
+    return RTEMS_INVALID_ADDRESS;
+
+  if( size <= 0 || size > MESSAGE_DATA_LENGTH )
+    return RTEMS_INVALID_SIZE;
+
+  comp_qid = _get_message_queue(id, COMP_QUEUE);
+  if( comp_qid != -1 ){
     _message_queue_send_message(comp_qid, buff, size);
-  else
+    return RTEMS_SUCCESSFUL;
+  } else{
     print("Error: No such a task (tid = %d) is found\n", id);
+    return RTEMS_INCORRECT_STATE;
+  }
 }
 
 /* @brief PSPM SMP Message receive
- * User API, which can be used to communicating with other task
+ * This function can be used to communicating with other task
  * The message is received from the comp_queue of current task
- * @param[out] return the task id of message sender
- * @param[in] buff is the start address of sented message
- * @param[in] size is the length of message
+ * @param[in] id is the task id of function caller
+ * @param[out] source_id is the task id of message sender
+ * @param[out] buff is the start address of the received message
+ * @param[out] size is the length of message
  * */
-void pspm_smp_message_receive(
-  tid_t * task_id,
+rtems_status_code _pspm_smp_message_receive(
+  tid_t id,
+  tid_t *source_id,
   void *buff,
   size_t *size
 )
 {
   rtems_id comp_qid;
-  tid_t task_id;
 
-  /* get the id of current task */
-  task_id = _get_task_id();
-  comp_qid = _message_queue_get_id(id, COMP_QUEUE);
+  /* get the id of comp_queue in current task */
+  comp_qid = _get_message_queue(id, COMP_QUEUE);
   if( comp_qid != -1 ){
     _message_queue_recieve_message(comp_qid, buff, size);
-    *task_id = ((Message_t *)buff)->id;
+    *source_id = ((Message_t *)buff)->id;
+    if( *size != 0 ){
+      return RTEMS_SUCCESSFUL;
+    }else{
+      return RTEMS_INVALID_SIZE;
+    }
   }
-  else
+  else{
     print("Error: No such a task (tid = %d) is found\n", id);
+    return RTEMS_INCORRECT_STATE;
+  }
+
 }
 
-
-inline tid_t _get_task_id()
-{
-  Thread_Control * executing;
-  Scheduler_Node * base_node;
-  Scheduler_EDF_SMP_Node * node;
-  /* rtems/score/Percpu.h */
-  executing = __Thread_Executing;
-  /* rtems/score/Threadimpl.h */
-  base_node = _Thread_Scheduler_get_home_node( executing );
-  node = _Scheduler_EDF_SMP_node_downcast( base_node );
-
-  return node->task_node.id;
-}
 
 inline void _message_queue_send_message(rtems_id qid, const void * in, size_t size_in)
 {
@@ -250,7 +462,7 @@ inline void _message_queue_recieve_message(rtems_id qid, void * out, size_t * si
 /* Obtaining the id of message queue through task id and Queue type
  * if return -1, no such a task is found.
  * */
-inline rtems_id _message_queue_get_id(tid_t id, Queue_Type type)
+inline rtems_id _get_message_queue(tid_t id, Queue_Type type)
 {
   rtems_id qid;
   /* No such a task exists */
@@ -277,7 +489,7 @@ void _pspm_smp_message_queue_IsC( tid_t id, const void *in, size_t size_in)
 {
   rtems_id in_qid;
 
-  in_qid = _message_queue_get_id(id, IN_QUEUE);
+  in_qid = _get_message_queue(id, IN_QUEUE);
   if( in_qid != -1 )
     _message_queue_send_message(in_qid, in, size_in);
   else
@@ -288,7 +500,7 @@ void _pspm_smp_message_queue_OrC( tid_t id, void *out, size_t * size_out)
 {
   rtems_id in_qid;
 
-  in_qid = _message_queue_get_id(id, OUT_QUEUE);
+  in_qid = _get_message_queue(id, OUT_QUEUE);
   if( in_qid != -1 )
     _message_queue_recieve_message(out_qid, out, size_out);
   else
@@ -297,26 +509,22 @@ void _pspm_smp_message_queue_OrC( tid_t id, void *out, size_t * size_out)
 }
 
 
-void _pspm_smp_message_queue_CrI(void * in, size_t * size_in)
+void _pspm_smp_message_queue_CrI(tid_t id, void * in, size_t * size_in)
 {
   rtems_id in_qid;
-  tid_t id;
 
-  id =  _get_task_id();
-  in_qid = rtems_message_queue_id_get(id, IN_QUEUE);
+  in_qid = _get_message_queue(id, IN_QUEUE);
   if( in_qid != -1 )
     _message_queue_recieve_message(in_qid, in, size_in);
   else
     print("Error: No such a task (tid = %d) is found\n", id);
 }
 
-void _pspm_smp_message_queue_CsO(const void * out, size_t size_in)
+void _pspm_smp_message_queue_CsO(tid_t id, const void * out, size_t size_in)
 {
   rtems_id out_qid;
-  tid_t id;
 
-  id = _get_task_id();
-  out_qid = rtems_message_queue_id_get(id, OUT);
+  out_qid = _get_message_queue(id, OUT_QUEUE);
   if( in_qid != -1 )
     _message_queue_send_message(out_qid, out, size_out);
   else
