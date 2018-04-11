@@ -11,11 +11,25 @@
 #include "rtems/score/Threadimpl.h"
 
 
+/* @brief I-Servant runnable
+ * This runnable will be invoked when timer fires
+ * @param[out] data_isc is the start address of sending message
+ * @param[out] size_isc is the length of the message
+ * */
 typedef void (*IServantRunnable)(
   void *data_isc,
   size_t *size_isc
 );
 
+/* @brief C-Servant runnable
+ * This runnable will be invoked when C-servant is scheduled
+ * @param[in] source_id is the task id of message sender
+ * @param[in] data_cri is the start address of received message
+ * @param[in] size_cri is the length of received message
+ * @param[out] target_id is the task id of message receiver
+ * @param[out] data_cso is the start address of sent message
+ * @param[out] size_cso is the length of sent message
+ * */
 typedef void (*CServantRunnable)(
   tid_t source_id,  /* The message sender */
   void *data_cri,
@@ -25,6 +39,11 @@ typedef void (*CServantRunnable)(
   size_t *size_cso
 );
 
+/* @brief O-Servant runnable
+ * This runnable will be invoked when timer fires
+ * @param[in] data_orc is the start address of received message
+ * @param[in] size_orc is the length of received message
+ * */
 typedef void (*OServantRunnable)(
   void *data_orc,
   size_t size_orc

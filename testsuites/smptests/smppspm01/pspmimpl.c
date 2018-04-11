@@ -151,6 +151,7 @@ void _in_servant_routine( void * id )
       message.size = MESSAGE_DATA_LENGTH;
     }
     /* Send message to the IN_QUEUE */
+    message.id = id;
     _pspm_smp_message_queue_IsC( id, message.address, message.size);
   }
 }
@@ -188,6 +189,8 @@ void _comp_servant_routine(tid_t task_id)
 {
   static Message_t message;
   rtems_id id = task_id;
+  rtems_id source_id;
+  rtems_id target_id;
   /* Reading data from in_queue, and writing data to out_queue*/
   rtems_id in_qid;
   rtems_id out_qid;
@@ -243,10 +246,13 @@ void _comp_servant_routine(tid_t task_id)
   rtems_rate_monotonic_create( rtems_build_name( 'P', 'E', 'R', id  ), &rate_monotonic_id);
   period = pspm_smp_task_manager.Task_Node_array[id]->period;
 
-  /* Creating timer for I-Servant and O-Servant */
+  /* Creating timer for I-Servant and set the timer id of its Servant structure */
   rtems_timer_create( rtems_build_name('T', 'I', 'I', id), &in_timer_id );
+  pspm_smp_task_manager.Task_Node_array[id].i_servant.id = in_timer_id;
   rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, &id);
+  /* Creating timer for O-Servant and set the timer id of its Servant structure */
   rtems_timer_create( rtems_build_name('T', 'I', 'O', id), &out_timer_id );
+  pspm_smp_task_manager.Task_Node_array[id].o_servant.id = out_timer_id;
   rtems_timer_fire_after(out_timer_id, period, _out_servant_routine, &id);
 
   /* Entry the while loop of a periodic rtems task */
@@ -266,13 +272,15 @@ void _comp_servant_routine(tid_t task_id)
 
     /* C-Servants communicate with other tasks */
     while( RTEMS_INVALID_SIZE != _pspm_smp_message_receive(id, &source_id, in_buff, in_size) ){
-      runnable(source_id, in_buffer, *in_size, &message.id, message.address, &message.size);
+      runnable(source_id, in_buffer, *in_size, &target_id, message.address, &message.size);
       if( message.size == 0 ){
         print("Warning: No message is sent from C-Servant to O-Servant, is that what you want?");
       }else if( message.size > MESSAGE_DATA_LENGTH ){
         print("Warning: Message size is greater than defined, please confirm!");
       }else{
-        _pspm_smp_message_send(message.id, message.address, message.size);
+        /* The message sender is the current task */
+        message.id = id;
+        _pspm_smp_message_send(target_id, message.address, message.size);
       }
     }
   }

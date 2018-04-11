@@ -9,6 +9,12 @@
 
 #include "pspm.h"
 
+void i_servant_1();
+void i_servant_1();
+
+void c_servant_1()
+void c_servant_1()
+
 
 #endif
 
