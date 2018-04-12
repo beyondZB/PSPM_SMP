@@ -473,7 +473,7 @@ void pspm_smp_servant_create(
     IServantRunnable i_runnable,
     CServantRunnable c_runnable,
     OServantRunnable o_runnable
-    )
+)
 {
   rtems_id qid;
   rtems_name name;

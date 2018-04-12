@@ -7,14 +7,29 @@
 
 void i_servant_0(void * data_isc, size_t *size_isc)
 {
-  * data_isc = 10;
-  * size_isc = 1;
+  int i;
+
+  *data_isc = 10;
+  *size_isc = 1;
+
+  printf("Task 0 Input:\n");
+  for( i = 0; i < *size_isc; ++i, ++data_isc){
+    printf("No.%d: %d\n", i+1, *(int *)data_isc);
+  }
 }
 
 void i_servant_1(void * data_isc, size_t *size_isc)
 {
-  * data_isc = 20;
-  * size_isc = 1;
+  int i;
+
+  *data_isc = 20;
+  *size_isc = 1;
+
+  printf("Task 1 Input:\n");
+  for( i = 0; i < *size_isc; ++i, ++data_isc){
+    printf("No.%d: %d\n", i+1, *(int *)data_isc);
+  }
+
 }
 
 void c_servant_0(
@@ -108,8 +123,8 @@ void o_servant_0(void *data_orc, size_t size_orc)
 {
   int i;
   printf("Task 0 Output:\n");
-  for( i = 0; i < size_orc, ++i, ++data_orc){
-    printf("No.%d %d\n", i+1, *(int *)data_orc);
+  for( i = 0; i < size_orc; ++i, ++data_orc){
+    printf("No.%d: %d\n", i+1, *(int *)data_orc);
   }
 }
 
@@ -117,8 +132,8 @@ void o_servant_1(void *data_orc, size_t size_orc)
 {
   int i;
   printf("Task 1 Output:\n");
-  for( i = 0; i < size_orc, ++i, ++data_orc){
-    printf("No.%d %d\n", i+1, *(int *)data_orc);
+  for( i = 0; i < size_orc; ++i, ++data_orc){
+    printf("No.%d: %d\n", i+1, *(int *)data_orc);
   }
 
 }

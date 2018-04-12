@@ -2,7 +2,6 @@ ACLOCAL_AMFLAGS = -I ../aclocal
 
 _SUBDIRS  =
 if SMPTESTS
-_SUBDIRS += smppspm01
 _SUBDIRS += smp01
 _SUBDIRS += smp02
 _SUBDIRS += smp03
