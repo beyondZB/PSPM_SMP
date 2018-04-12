@@ -7,10 +7,13 @@
 #include "pspm.h"
 #include "system.h"
 
-/* The Message data length is set to 1 word */
-#define MESSAGE_DATA_LENGTH 1
+/* The length of message data, in number of word */
+#define MESSAGE_DATA_LENGTH 2
 /*One message is allowed to be sent to at most TARTGET_NUM_MAX tasks */
 #define TARTGET_NUM_MAX 20
+
+/* The size of message buffer in each message queue */
+#define MESSAGE_BUFFER_LENGTH 5
 
 
 /* This variable is created in the Schduduler SMP EDF node file */
@@ -373,7 +376,7 @@ void _comp_servant_routine(tid_t task_id)
  * Group deadline is one of the timing information for sorting the execution of subtasks
  * For more details, please refer to the PD2 relative research paper
  * */
-static void _update_min_group_deadline(
+static void _group_deadline_update(
     double task_utility,
     Subtask_Node *p_snode,
     uint32_t *p_min_group_deadline
@@ -411,7 +414,7 @@ static void _pd2_subtasks_create(
     p_new_snode->b = ceil((double)i / p_tnode->utility) - floor((double)i / p_tnode->utility);
     /* the b(Ti) of the last subtask should be 0 */
     p_new_snode->b = (i == p_tnode->wcet) ? 0 : p_new_snode->b;
-    _update_min_group_deadline(p_tnode->utility, p_new_snode, &min_group_deadline);
+    _group_deadline_update(p_tnode->utility, p_new_snode, &min_group_deadline);
 
     /* prepend the subtask into subtask node queue */
     rtems_chain_prepend_unprotected( &p_tnode->Subtask_Node_queue, &p_new_snode->Chain );
@@ -472,13 +475,47 @@ void pspm_smp_servant_create(
     OServantRunnable o_runnable
     )
 {
+  rtems_id qid;
+  rtems_name name;
+  rtems_status_code status;
 
+  /* Set the Servant runnable of a Periodic task */
   ((Task_Node *)task)->i_servant.runnable = i_runnable;
   ((Task_Node *)task)->c_servant.runnable = c_runnable;
   ((Task_Node *)task)->o_servant.runnable = o_runnable;
+
+  /* Create IN_QUEUE, COMP_QUEUE, and OUT_QUEUE in each periodic task
+   * Notice: All message receive and send operations perform without blocking
+   * This requires that RTEMS_NO_WAIT option in rtems message passing mechanism.
+   * */
+
+  /* rtems_status_code rtems_message_queue_create(rtems_name name, uint32_t count, size_t max_message_size, rtems_attribute attribute_set, rtems_id *id); */
+  /**/
+  name = rtems_build_name('Q','U','I',((Task_Node*)task)->id);
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  if(status == RTEMS_SUCCESSFUL){
+    ((Task_Node *)task)->i_queue_id= qid;
+  }else{
+    printf("Error: The creation of In QUEUE in task %d failed\n", ((Task_Node *)task)->id);
+  }
+
+  name = rtems_build_name('Q','U','C',((Task_Node*)task)->id);
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  if(status == RTEMS_SUCCESSFUL){
+    ((Task_Node *)task)->c_queue_id= qid;
+  }else{
+    printf("Error: The creation of In QUEUE in task %d failed\n", ((Task_Node *)task)->id);
+  }
+
+  name = rtems_build_name('Q','U','O',((Task_Node*)task)->id);
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  if(status == RTEMS_SUCCESSFUL){
+    ((Task_Node *)task)->o_queue_id= qid;
+  }else{
+    printf("Error: The creation of In QUEUE in task %d failed\n", ((Task_Node *)task)->id);
+  }
+
 }
-
-
 
 
 
