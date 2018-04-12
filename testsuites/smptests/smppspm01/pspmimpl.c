@@ -170,14 +170,14 @@ void _in_servant_routine( void * task_id )
   IServantRunnable runnable;
 
   if((runnable = (IServantRunnable)_get_runnable(id, IN_QUEUE)) == NULL){
-    print("Error: No such a task (tid = %d) when creating a I-Servant\n", id);
+    printf("Error: No such a task (tid = %d) when creating a I-Servant\n", id);
   } else {
     qid = _get_message_queue(id, IN_QUEUE);
     _initialize_message(&message);
     runnable( & message.address, &message.size );
 
     if(message.size > MESSAGE_DATA_LENGTH){
-      print("Error: Message size in I-Servant exceed the MESSAGE_DATA_LENGTH\n");
+      printf("Error: Message size in I-Servant exceed the MESSAGE_DATA_LENGTH\n");
       /* Warning: Resize the message size */
       message.size = MESSAGE_DATA_LENGTH;
     }
@@ -200,7 +200,7 @@ void _out_servant_routine( void * task_id );
   OServantRunnable runnable;
 
   if((runnable = (OServantRunnable)_get_runnable(id, OUT_QUEUE)) == NULL){
-    print("Error: No such a task (tid = %d) when creating a O-Servant\n", id);
+    printf("Error: No such a task (tid = %d) when creating a O-Servant\n", id);
   } else {
     qid = _get_message_queue(id, OUT_QUEUE);
 
@@ -214,7 +214,7 @@ void _out_servant_routine( void * task_id );
       }
 
       if(message.size > MESSAGE_DATA_LENGTH){
-        print("Error: Message size in I-Servant exceed the MESSAGE_DATA_LENGTH\n");
+        printf("Error: Message size in I-Servant exceed the MESSAGE_DATA_LENGTH\n");
         /* Warning: Resize the message size */
         message.size = MESSAGE_DATA_LENGTH;
       }
@@ -265,7 +265,7 @@ void _comp_servant_routine(tid_t task_id)
 
   /* If runnable == NULL, no such a task exists */
   if((runnable = (CServantRunnable)_get_runnable(id, COMP_QUEUE)) == NULL){
-    print("Error: No such a task (tid = %d) when creating a C-Servant\n", id);
+    printf("Error: No such a task (tid = %d) when creating a C-Servant\n", id);
     return;
   }
 
@@ -308,19 +308,24 @@ void _comp_servant_routine(tid_t task_id)
     rtems_rate_monotonic_period(rate_monotonic_id, period);
 
     /* I-C-O Servants in the same task communicating */
-    if(_pspm_smp_message_queue_CrI(id, in_buff, &in_size)){
+    while(1){
+      _pspm_smp_message_queue_CrI(id, in_buff, &in_size);
+      if( in_size == 0 ) {
+        break;
+      } else {
+        runnable(id, in_buffer, in_size, target_id_array, &target_num, message.address, &message.size);
 
-      runnable(id, in_buffer, in_size, target_id_array, &target_num, message.address, &message.size);
-
-      if( message.size == 0 ){
-        print("Warning: No message is sent from C-Servant to O-Servant, is that what you want?");
-      }else if( message.size > MESSAGE_DATA_LENGTH ){
-        print("Warning: Message size is greater than defined, please confirm!");
-      }else{
-        /* Ensure that: Mesage from In_queue can only send to Out_queue, no matter which is the target that the programmer set */
-        _pspm_smp_message_queue_CsO(id, message.address, message.size);
+        if( message.size == 0 ){
+          printf("Warning: No message is sent from C-Servant to O-Servant, is that what you want?");
+        }else if( message.size > MESSAGE_DATA_LENGTH ){
+          printf("Warning: Message size is greater than defined, please confirm!");
+        }else{
+          /* Ensure that: Mesage from In_queue can only send to Out_queue, no matter which is the target that the programmer set */
+          _pspm_smp_message_queue_CsO(id, message.address, message.size);
+        }
       }
     }
+
 
     /* C-Servants communicate with other tasks */
     while(1){
@@ -333,9 +338,9 @@ void _comp_servant_routine(tid_t task_id)
       runnable(source_id, in_buffer, in_size, target_id_array, &target_num, message.address, &message.size);
 
       if( message.size == 0 ){
-        print("Warning: No message will be sent to other tasks. Is that what you want?");
+        printf("Warning: No message will be sent to other tasks. Is that what you want?");
       }else if( message.size > MESSAGE_DATA_LENGTH ){
-        print("Warning: Message size is greater than defined, please confirm!");
+        printf("Warning: Message size is greater than defined, please confirm!");
         message.size = MESSAGE_DATA_LENGTH;
       }else{
         /* The message sender set to the current task */
@@ -543,10 +548,10 @@ static void _pspm_smp_message_queue_CsC(
     if(RTEMS_SUCCESSFUL == _message_queue_send_message(comp_qid, buff, size)){
       return;
     }else{
-      print("Error: Message Send Failed\n");
+      printf("Error: Message Send Failed\n");
     }
   } else{
-    print("Error: No such a task (tid = %d) is found\n", id);
+    printf("Error: No such a task (tid = %d) is found\n", id);
   }
 }
 
@@ -566,10 +571,12 @@ static void _pspm_smp_message_queue_CrC(
     if(RTEMS_SUCCESSFUL == _message_queue_receive_message(comp_qid, buff, size)){
       *source_id = ((Message_t *)buff)->id;
     }else{
-      print("Error: Message Received Failed\n");
+      printf("Error: Message Received Failed\n");
+      *size = 0;
     }
   }else{
-    print("Error: No such a task (tid = %d) is found\n", id);
+    printf("Error: No such a task (tid = %d) is found\n", id);
+    *size = 0;
   }
 }
 
@@ -582,10 +589,10 @@ static void _pspm_smp_message_queue_IsC( tid_t id, const void *in, size_t size_i
     if(RTEMS_SUCCESSFUL == _message_queue_send_message(in_qid, in, size_in)){
       return;
     }else{
-      print("Error: Message Send Failed\n");
+      printf("Error: Message Send Failed\n");
     }
   }else{
-    print("Error: No such a task (tid = %d) is found\n", id);
+    printf("Error: No such a task (tid = %d) is found\n", id);
   }
 
 }
@@ -601,10 +608,14 @@ static void _pspm_smp_message_queue_OrC( tid_t id, void *out, size_t * size_out)
     if(RTEMS_SUCCESSFUL == _message_queue_receive_message(out_qid, out, size_out)){
       return;
     }else{
-      print("Error: Message Received Failed\n");
+      printf("Error: Message Received Failed\n");
+      *size_out  = 0;
     }
-  } else
-    print("Error: No such a task (tid = %d) is found\n", id);
+  } else{
+      printf("Error: No such a task (tid = %d) is found\n", id);
+      *size_out  = 0;
+  }
+
 
 }
 
@@ -618,10 +629,12 @@ static void _pspm_smp_message_queue_CrI(tid_t id, void * in, size_t * size_in)
     if(RTEMS_SUCCESSFUL == _message_queue_receive_message(in_qid, out, size_out)){
       return;
     }else{
-      print("Error: Message Received Failed\n");
+      printf("Error: Message Received Failed\n");
+      *size_in = 0;
     }
   } else{
-    print("Error: No such a task (tid = %d) is found\n", id);
+      printf("Error: No such a task (tid = %d) is found\n", id);
+      *size_in = 0;
   }
 }
 
@@ -634,10 +647,10 @@ static void _pspm_smp_message_queue_CsO(tid_t id, const void * out, size_t size_
     if(RTEMS_SUCCESSFUL == _message_queue_send_message(out_qid, in, size_in)){
       return;
     }else{
-      print("Error: Message Send Failed\n");
+      printf("Error: Message Send Failed\n");
     }
   }else{
-    print("Error: No such a task (tid = %d) is found\n", id);
+    printf("Error: No such a task (tid = %d) is found\n", id);
   }
 
 }
