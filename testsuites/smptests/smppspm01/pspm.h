@@ -31,10 +31,11 @@ typedef void (*IServantRunnable)(
  * @param[out] size_cso is the length of sent message
  * */
 typedef void (*CServantRunnable)(
-  tid_t source_id,  /* The message sender */
+    tid_t source_id,  /* The message sender, there is only one sender*/
   void *data_cri,
   size_t size_cri,
-  tid_t *target_id,  /* The target task id of generated data */
+  tid_t *target_id,  /* The array of target tasks */
+  int32_t *target_num; /* There could multiple target */
   void *data_cso,
   size_t *size_cso
 );
@@ -77,7 +78,7 @@ tid_t _get_task_id()
  * This structure must be one of the structure in SMP_EDF scheduler
  * */
 typedef struct _Subtask_Node{
-  Chain_Node Chain; /* subtasks are managed with chain structure  */
+  rtems_chain_node Chain; /* subtasks are managed with chain structure  */
   /* following parameters are timing infos of subtasks:
    * b(Ti), r(Ti), d(Ti), group deadline(Ti) in PD2*/
   uint32_t b;
@@ -100,7 +101,7 @@ typedef struct _Subtask_Node{
 #define  OUT_QUEUE    2003
 
 /* Type of task id */
-typedef int32_t tid_t;
+typedef int64_t tid_t;
 
 /* The structure for tasks in multi-core PSPM
  * It is one member of the scheduler node Scheduler_EDF_SMP_Node
@@ -134,11 +135,11 @@ typedef struct _Message{
  * This variable must be in the including file of kernel
  * For being invoked in default_tick function
  * */
-extern PSPM_SMP pspm_smp_task_manager;
+typedef (void *) Task_Node_t;
 
 /* This type must be in the same file pspm_smp_task_manager */
 typedef struct _PSPM_SMP{
-  Chain_Control Task_Node_queue; /* The queue of task node created by user for saving information */
+  rtems_chain_control Task_Node_queue; /* The queue of task node created by user for saving information */
   Task_Node ** Task_Node_array;  /* The array of task node created by user for searching node info*/
   uint32_t array_length;  /* The length of task node array */
   uint32_t quantum_length;  /* The quantum length setted by developer */
@@ -152,7 +153,7 @@ typedef struct _PSPM_SMP{
  * @param[in] wcet is worst case execution time of this task, the wcet is assumed to be provided by programmers
  * @param[in] period is the period if task type is periodic, otherwise is the minimal arrival interval
  * */
-Task_Node * pspm_smp_task_create(
+Task_Node_t pspm_smp_task_create(
   tid_t task_id,
   Task_Type task_type,
   int64_t wcet,
@@ -167,13 +168,15 @@ Task_Node * pspm_smp_task_create(
  * @param[in] o_runnable is the defined runnable function of O-servant
  * */
 void pspm_smp_servant_create(
-  Task_Node *task,
+  Task_Node_t task,
   IServantRunnable i_runnable,
   CServantRunnable c_runnable,
   OServantRunnable o_runnable
 );
 
-
+/* PSPM SMP programs entry
+ * */
+void main();
 
 #endif
 

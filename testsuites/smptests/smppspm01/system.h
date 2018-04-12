@@ -10,18 +10,18 @@
 #include "tmacros.h"
 #include "test_support.h"
 
-/* PSPM support
- * */
-#include "pspm.h"
+#define QUANTUM_LENGTH 50 /* In number of ticks */
+#define TASK_NUM_MAX 20
 
 /* functions */
+void pspm_smp_task_manager_initialize( int task_num, int quanta);
 
 rtems_task Init(
   rtems_task_argument argument
 );
 
-rtems_task Test_task(
-  rtems_task_argument argument
+rtems_task _comp_servant_routine()(
+    rtems_task_argument argument
 );
 
 /* configuration information */
@@ -31,8 +31,7 @@ rtems_task Test_task(
 
 #define CONFIGURE_MAXIMUM_PROCESSORS   4
 
-#define CONFIGURE_MAXIMUM_TASKS            \
-    (1 + CONFIGURE_MAXIMUM_PROCESSORS)
+#define CONFIGURE_MAXIMUM_TASKS     (1 + CONFIGURE_MAXIMUM_PROCESSORS)
 #define CONFIGURE_MAXIMUM_SEMAPHORES 1
 
 #define CONFIGURE_INITIAL_EXTENSIONS RTEMS_TEST_INITIAL_EXTENSION
