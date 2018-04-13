@@ -440,8 +440,14 @@ Task_Node_t  pspm_smp_task_create(
   /* Initialize the elements in task node */
   p_tnode->id = task_id;
   p_tnode->type = task_type;
-  p_tnode->wcet = ceil((double)wcet / pspm_smp_task_manager.quantum_length);
-  p_tnode->period = ceil((double)period / pspm_smp_task_manager.quantum_length);
+  p_tnode->wcet = RTEMS_MILLISECONDS_TO_TICKS(wcet);
+  p_tnode->period = RTEMS_MILLISECONDS_TO_TICKS(period);
+
+  /*Note that : the quantum length is presented in number of ticks */
+  p_tnode->quant_wcet =  \
+    ceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
+  p_tnode->quant_period =  \
+    ceil((double)p_tnode->period / pspm_smp_task_manager.quantum_length);
   p_tnode->utility = (double)p_tnode->wcet / p_tnode->period;
 
   /* calculate the PD2 relative timing information for scheduling subtasks */

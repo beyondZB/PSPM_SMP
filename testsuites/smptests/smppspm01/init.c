@@ -55,7 +55,7 @@ rtems_task Init(
   cpu_num  = rtems_get_processor_count();
 
   /* Initialize the most important structure */
-  pspm_smp_task_manager_initialize();
+  pspm_smp_task_manager_initialize(TASK_NUM_MAX, QUANTUM_LENGTH);
 
   /* Interpretation the application designed with pspm_smp programming paradigm */
   main();

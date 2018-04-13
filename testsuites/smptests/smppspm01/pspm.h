@@ -111,8 +111,8 @@ typedef struct _Task_Node{
   rtems_chain_node Chain;     /* chain for tasks */
   tid_t id;             /* the global unique task id */
   Task_Type type;
-  uint32_t period;      /* period of task presented by number of ticks */
-  uint32_t wcet;        /* wcet of task presented by number of ticks */
+  uint32_t period;      /* period of task presented by number of ms */
+  uint32_t wcet;        /* wcet of task presented by number of ms */
   uint32_t quant_period;/* period of task presented by number of quantum */
   uint32_t quant_wcet;  /* wcet of task presented by number of quantum */
   double utility;       /* Utilization of task */
@@ -142,7 +142,7 @@ typedef struct _PSPM_SMP{
   rtems_chain_control Task_Node_queue; /* The queue of task node created by user for saving information */
   Task_Node ** Task_Node_array;  /* The array of task node created by user for searching node info*/
   uint32_t array_length;  /* The length of task node array */
-  uint32_t quantum_length;  /* The quantum length setted by developer */
+  uint32_t quantum_length;  /* The quantum length (in number of ticks) defined in system.h */
 }PSPM_SMP;
 
 
@@ -150,8 +150,8 @@ typedef struct _PSPM_SMP{
  * User API, which is used to create the task
  * @param[in] task_id is the user defined task id, which is required to be unique and sequential.
  * @param[in] task_type defines the type of task, including periodic, aperiodic, sporadic
- * @param[in] wcet is worst case execution time of this task, the wcet is assumed to be provided by programmers
- * @param[in] period is the period if task type is periodic, otherwise is the minimal arrival interval
+ * @param[in] wcet is worst case execution time (in number of ms) of this task
+ * @param[in] period is the period (in number of ms) if task type is periodic, otherwise is the minimal arrival interval
  * */
 Task_Node_t pspm_smp_task_create(
   tid_t task_id,
