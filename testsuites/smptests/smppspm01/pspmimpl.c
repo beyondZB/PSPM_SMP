@@ -25,6 +25,13 @@ typedef struct _Message{
 /*        Inner Function Declaration                       */
 /***********************************************************/
 
+/* @brief Obtain the global unique id of queue
+ * Obtaining the id of message queue through task id and Queue type
+ *
+ * @retval If this method return -1, then no such a task is found.
+ * */
+rtems_id _get_message_queue(tid_t id, Queue_Type type);
+
 /* @brief I-servants send message to C-servant in the same task
  * Can only be called by I-servants
  * @para id, the id of the function calling task
@@ -75,14 +82,6 @@ static void _pspm_smp_message_queue_CrC( tid_t id, tid_t *source_id, void *buff,
 static void _pspm_smp_message_queue_CsC( tid_t id, const void *buff, size_t size);
 
 
-
-/* @brief Obtain the global unique id of queue
- * Obtaining the id of message queue through task id and Queue type
- *
- * @retval If this method return -1, then no such a task is found.
- * */
-inline rtems_id _get_message_queue(tid_t id, Queue_Type type);
-
 /* @brief Called by _pspm_smp_message_queue_operations, for sending message to qid queue
  * @para qid, the id of the message queue, which is global unique
  * @para in, the start address of the sent message
@@ -96,36 +95,6 @@ inline rtems_status_code _message_queue_send_message(rtems_id qid, const void *i
  * */
 inline rtems_status_code _message_queue_receive_message(rtems_id qid, void * out, size_t * size_out);
 
-/* @brief Obtaining scheduler node from the base node in RTEMS
- * This function is first introduced in file "Scheduleredfsmp.c"
- * */
-static inline Scheduler_EDF_SMP_Node * _scheduler_edf_smp_node_downcast( Scheduler_Node *node  )
-{
-  return (Scheduler_EDF_SMP_Node *) node;
-}
-
-/* Math function ceil and floor implementation */
-static float floor(float num)
-{
-  if(num < 0){
-    int result = (int)num;
-    return (float)(result-1);
-  }else{
-    return (float)(int32_t)num;
-  }
-
-}
-static uint32_t ceil(float num)
-{
-  if(num < 0){
-    int result = (int)num;
-    return (float)(result);
-  }else{
-    int result = (int)num;
-    return (float)(result+1);
-  }
-}
-
 
 /* @brief Obtaining the runnable of Servant by task id and Queue type
  * if return -1, no such a task is found.
@@ -136,24 +105,83 @@ void * _get_runnable(tid_t id, Queue_Type type);
  *
  * Note: the length of memory for data is defined by MESSAGE_DATA_LENGTH
  * */
-inline void _initialize_message( Message_t * message );
+void _initialize_message( Message_t * message );
 
 /* @brief constructing a I-servant routine for timer
  * This function act as a parameter of function rtems_timer_fire_after()
  * @param[in] id is the I-servant belonging task id
  * */
-void _in_servant_routine( void * task_id );
+void _in_servant_routine( rtems_id timer_id, void * task_id );
 
 /* @brief constructing a O-servant routine for timer
  * This function act as a parameter of function rtems_timer_fire_after()
  * @param[in] id is the O-servant belonging task id
  * */
-void _out_servant_routine( void * task_id );
+void _out_servant_routine( rtems_id timer_id, void * task_id );
 
 
 /***********************************************************/
 /*        Inner Function Implementation                    */
 /***********************************************************/
+
+
+
+/* Obtaining the id of message queue through task id and Queue type
+ * if return -1, no such a task is found.
+ * */
+rtems_id _get_message_queue(tid_t id, Queue_Type type)
+{
+  rtems_id qid;
+  /* No such a task exists */
+  if( pspm_smp_task_manager.Task_Node_array[id] == NULL )
+    return -1;
+
+  switch(type){
+    case IN_QUEUE:
+      qid = pspm_smp_task_manager.Task_Node_array[id]->i_queue_id;
+      break;
+    case COMP_QUEUE:
+      qid = pspm_smp_task_manager.Task_Node_array[id]->c_queue_id;
+      break;
+    case OUT_QUEUE:
+      qid = pspm_smp_task_manager.Task_Node_array[id]->o_queue_id;
+      break;
+    default:
+      qid = -1;
+  }
+  return qid;
+}
+
+/* @brief Obtaining scheduler node from the base node in RTEMS
+ * This function is first introduced in file "Scheduleredfsmp.c"
+ * */
+static inline Scheduler_EDF_SMP_Node * _scheduler_edf_smp_node_downcast( Scheduler_Node *node  )
+{
+  return (Scheduler_EDF_SMP_Node *) node;
+}
+
+/* Math function ceil and floor implementation */
+static float myfloor(float num)
+{
+  if(num < 0){
+    int result = (int)num;
+    return (float)(result-1);
+  }else{
+    return (float)(int32_t)num;
+  }
+
+}
+static uint32_t myceil(float num)
+{
+  if(num < 0){
+    int result = (int)num;
+    return (float)(result);
+  }else{
+    int result = (int)num;
+    return (float)(result+1);
+  }
+}
+
 
 void * _get_runnable(tid_t id, Queue_Type type)
 {
@@ -179,14 +207,14 @@ void * _get_runnable(tid_t id, Queue_Type type)
 }
 
 
-inline void _initialize_message( Message_t * message )
+void _initialize_message( Message_t * message )
 {
   message->address = (int32_t *)malloc(MESSAGE_DATA_LENGTH * sizeof(int32_t));
-  message->address = MESSAGE_DATA_LENGTH;
+  message->size = MESSAGE_DATA_LENGTH;
 }
 
 
-void _in_servant_routine( void * task_id )
+void _in_servant_routine( rtems_id timer_id, void * task_id )
 {
   static Message_t message;
   rtems_id qid;
@@ -216,7 +244,7 @@ void _in_servant_routine( void * task_id )
  * This function act as a parameter of function rtems_timer_fire_after()
  * @param[in] id is the O-servant belonging task id
  * */
-void _out_servant_routine( void * task_id )
+void _out_servant_routine( rtems_id timer_id, void * task_id )
 {
   static Message_t message;
   rtems_id qid;
@@ -430,9 +458,9 @@ static void _pd2_subtasks_create(
   for(int i = p_tnode->wcet; i >= 1; i--)
   {
     Subtask_Node *p_new_snode = (Subtask_Node *)malloc(sizeof(Subtask_Node));
-    p_new_snode->r = floor((double)(i - 1) / p_tnode->utility);
-    p_new_snode->d = ceil((double)i / p_tnode->utility);
-    p_new_snode->b = ceil((double)i / p_tnode->utility) - floor((double)i / p_tnode->utility);
+    p_new_snode->r = myfloor((double)(i - 1) / p_tnode->utility);
+    p_new_snode->d = myceil((double)i / p_tnode->utility);
+    p_new_snode->b = myceil((double)i / p_tnode->utility) - myfloor((double)i / p_tnode->utility);
     /* the b(Ti) of the last subtask should be 0 */
     p_new_snode->b = (i == p_tnode->wcet) ? 0 : p_new_snode->b;
     _group_deadline_update(p_tnode->utility, p_new_snode, &min_group_deadline);
@@ -465,8 +493,8 @@ Task_Node_t  pspm_smp_task_create(
   p_tnode->period = RTEMS_MILLISECONDS_TO_TICKS(period);
 
   /*Note that : the quantum length is presented in number of ticks */
-  p_tnode->quant_wcet =  ceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
-  p_tnode->quant_period =  ceil((double)p_tnode->period / pspm_smp_task_manager.quantum_length);
+  p_tnode->quant_wcet =  myceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
+  p_tnode->quant_period =  myceil((double)p_tnode->period / pspm_smp_task_manager.quantum_length);
   p_tnode->utility = (double)p_tnode->wcet / p_tnode->period;
 
   /* calculate the PD2 relative timing information for scheduling subtasks */
@@ -564,31 +592,7 @@ inline rtems_status_code _message_queue_receive_message(rtems_id qid, void * out
 }
 
 
-/* Obtaining the id of message queue through task id and Queue type
- * if return -1, no such a task is found.
- * */
-inline rtems_id _get_message_queue(tid_t id, Queue_Type type)
-{
-  rtems_id qid;
-  /* No such a task exists */
-  if( pspm_smp_task_manager.Task_Node_array[id] == NULL )
-    return -1;
 
-  switch(type){
-    case IN_QUEUE:
-      qid = pspm_smp_task_manager.Task_Node_array[id]->i_queue_id;
-      break;
-    case COMP_QUEUE:
-      qid = pspm_smp_task_manager.Task_Node_array[id]->c_queue_id;
-      break;
-    case OUT_QUEUE:
-      qid = pspm_smp_task_manager.Task_Node_array[id]->o_queue_id;
-      break;
-    default:
-      qid = -1;
-  }
-  return qid;
-}
 
 
 static void _pspm_smp_message_queue_CsC(

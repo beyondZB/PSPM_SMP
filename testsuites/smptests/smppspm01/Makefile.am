@@ -1,5 +1,5 @@
 rtems_tests_PROGRAMS = smppspm01
-smppspm01_SOURCES = init.c pspm.h pspmimpl.c main.c app.h app.c system.h ../../support/src/locked_print.c
+smppspm01_SOURCES = pspm.h app.h app.c pspmimpl.c main.c init.c ../../support/src/locked_print.c
 
 dist_rtems_tests_DATA = smppspm01.scn
 dist_rtems_tests_DATA += smppspm01.doc
