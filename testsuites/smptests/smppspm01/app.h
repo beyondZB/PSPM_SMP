@@ -24,8 +24,8 @@
 //  size_t *size_isc
 //);
 //
+void i_servant_0(void * data_isc, size_t *size_isc);
 void i_servant_1(void * data_isc, size_t *size_isc);
-void i_servant_2(void * data_isc, size_t *size_isc);
 
 /* @brief C-Servant runnable
  * Reading data from data_cri, and writing to the data_cso.
@@ -48,8 +48,8 @@ void i_servant_2(void * data_isc, size_t *size_isc);
 //  void *data_cso,
 //  size_t *size_cso
 //);
+void c_servant_0(tid_t source_id, void *data_cri, size_t size_cri, tid_t *target_id, int32_t *target_num, void *data_cso, size_t *size_cso);
 void c_servant_1(tid_t source_id, void *data_cri, size_t size_cri, tid_t *target_id, int32_t *target_num, void *data_cso, size_t *size_cso);
-void c_servant_2(tid_t source_id, void *data_cri, size_t size_cri, tid_t *target_id, int32_t *target_num, void *data_cso, size_t *size_cso);
 
 /* @brief O-Servant runnable
  * Reading data from data_orc, and writing to the environment device.
@@ -61,8 +61,8 @@ void c_servant_2(tid_t source_id, void *data_cri, size_t size_cri, tid_t *target
 //  void *data_orc,
 //  size_t size_orc
 //);
+void o_servant_0(void *data_orc, size_t size_orc);
 void o_servant_1(void *data_orc, size_t size_orc);
-void o_servant_2(void *data_orc, size_t size_orc);
 
 
 #endif

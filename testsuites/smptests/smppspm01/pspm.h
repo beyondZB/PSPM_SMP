@@ -5,11 +5,29 @@
 
 #ifndef __PSPM_H__
 #define __PSPM_H__
-#include "rtems/Chain.h"
-#include "rtems.h"
-#include "rtems/score/Percpu.h"
-#include "rtems/score/Threadimpl.h"
+#include "rtems/score/threadimpl.h"
+#include "rtems/score/scheduleredfsmp.h"
 
+#include "tmacros.h"
+#include "test_support.h"
+
+#define QUANTUM_LENGTH 50 /* In number of ticks */
+#define TASK_NUM_MAX 20
+
+/* functions */
+void pspm_smp_task_manager_initialize( int task_num, int quanta);
+
+rtems_task Init( rtems_task_argument argument);
+
+rtems_task _comp_servant_routine( rtems_task_argument argument );
+
+void Loop( void );
+
+/*
+ *  Handy macros and static inline functions
+ */
+
+/* end of include file */
 
 /* @brief I-Servant runnable
  * This runnable will be invoked when timer fires
@@ -31,11 +49,11 @@ typedef void (*IServantRunnable)(
  * @param[out] size_cso is the length of sent message
  * */
 typedef void (*CServantRunnable)(
-    tid_t source_id,  /* The message sender, there is only one sender*/
+  tid_t source_id,  /* The message sender, there is only one sender*/
   void *data_cri,
   size_t size_cri,
   tid_t *target_id,  /* The array of target tasks */
-  int32_t *target_num; /* There could multiple target */
+  int32_t *target_num, /* There could multiple target */
   void *data_cso,
   size_t *size_cso
 );
@@ -50,42 +68,19 @@ typedef void (*OServantRunnable)(
   size_t size_orc
 );
 
-
-struct _Servent{
-  void * runnable;
-  rtems_id id; /* timer id, only used in I-servant and O-servant*/
-}Servant;
-
-
 /* This function must be called in timeslice function to obtain the subsequent subtasks timing information */
-tid_t _get_task_id()
-{
-  /* Some kernel including files must be included in this file,
-   * Rather than including them in the pspm.h file */
-  Thread_Control * executing;
-  Scheduler_Node * base_node;
-  Scheduler_EDF_SMP_Node * node;
-  /* rtems/score/Percpu.h */
-  executing = __Thread_Executing;
-  /* rtems/score/Threadimpl.h */
-  base_node = _Thread_Scheduler_get_home_node( executing );
-  node = _Scheduler_EDF_SMP_node_downcast( base_node );
-
-  return node->task_node.id;
-}
-
-/* Type of subtasks
- * This structure must be one of the structure in SMP_EDF scheduler
- * */
-typedef struct _Subtask_Node{
-  rtems_chain_node Chain; /* subtasks are managed with chain structure  */
-  /* following parameters are timing infos of subtasks:
-   * b(Ti), r(Ti), d(Ti), group deadline(Ti) in PD2*/
-  uint32_t b;
-  uint32_t r;
-  uint32_t d;
-  uint32_t g;
-}Subtask_Node;
+//tid_t _get_task_id(Thread_Control * executing)
+//{
+//  /* Some kernel including files must be included in this file,
+//   * Rather than including them in the pspm.h file */
+//  Scheduler_Node * base_node;
+//  Scheduler_EDF_SMP_Node * node;
+//  /* rtems/score/Threadimpl.h */
+//  base_node = _Thread_Scheduler_get_home_node( executing );
+//  node = _Scheduler_EDF_SMP_node_downcast( base_node );
+//
+//  return node->task_node->id;
+//}
 
 /* Type of Tasks in multicore PSPM
  * Currently, only the periodic task can be created. 2018/4/10
@@ -100,50 +95,9 @@ typedef struct _Subtask_Node{
 #define  COMP_QUEUE   2002
 #define  OUT_QUEUE    2003
 
-/* Type of task id */
-typedef int64_t tid_t;
+typedef uint32_t Queue_Type;
 
-/* The structure for tasks in multi-core PSPM
- * It is one member of the scheduler node Scheduler_EDF_SMP_Node
- * This structure must be one of the structure in SMP_EDF scheduler
- * */
-typedef struct _Task_Node{
-  rtems_chain_node Chain;     /* chain for tasks */
-  tid_t id;             /* the global unique task id */
-  Task_Type type;
-  uint32_t period;      /* period of task presented by number of ms */
-  uint32_t wcet;        /* wcet of task presented by number of ms */
-  uint32_t quant_period;/* period of task presented by number of quantum */
-  uint32_t quant_wcet;  /* wcet of task presented by number of quantum */
-  double utility;       /* Utilization of task */
-  Servant  i_servant;
-  Servant  c_servant;
-  Servant  o_servant;
-  rtems_id i_queue_id; /* id of queue for passing message between I and C servant in the same task */
-  rtems_id c_queue_id; /* id of queue for communicating with other tasks, used by C-servant */
-  rtems_id o_queue_id; /* id of queue for passing message between C and O servant in the same task */
-  rtems_chain_control Subtask_Node_queue; /* chain for subtasks */
-}Task_Node;
-
-typedef struct _Message{
-  void * address; /*The start address of the Message*/
-  size_t size; /*The length of Message */
-  tid_t id; /* the task id of Message sender */
-}Message_t;
-
-/* One global data structure for saving task information
- * This variable must be in the including file of kernel
- * For being invoked in default_tick function
- * */
-typedef (void *) Task_Node_t;
-
-/* This type must be in the same file pspm_smp_task_manager */
-typedef struct _PSPM_SMP{
-  rtems_chain_control Task_Node_queue; /* The queue of task node created by user for saving information */
-  Task_Node ** Task_Node_array;  /* The array of task node created by user for searching node info*/
-  uint32_t array_length;  /* The length of task node array */
-  uint32_t quantum_length;  /* The quantum length (in number of ticks) defined in system.h */
-}PSPM_SMP;
+typedef void* Task_Node_t;
 
 
 /* @brief Task Creation API
@@ -177,6 +131,28 @@ void pspm_smp_servant_create(
 /* PSPM SMP programs entry
  * */
 void main();
+
+/* configuration information */
+
+#define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_SIMPLE_CONSOLE_DRIVER
+
+/* 1 ms == 1 tick*/
+#define CONFIGURE_MILLISECONDES_PER_TICK 1
+
+/* 1 timeslice == 50 ticks */
+#define CONFIGURE_TICKS_PER_TIMESLICE 50
+
+#define CONFIGURE_MAXIMUM_PROCESSORS   4
+
+#define CONFIGURE_MAXIMUM_TASKS     (1 + TASK_NUM_MAX)
+#define CONFIGURE_MAXIMUM_SEMAPHORES 1
+
+#define CONFIGURE_INITIAL_EXTENSIONS RTEMS_TEST_INITIAL_EXTENSION
+
+#define CONFIGURE_RTEMS_INIT_TASKS_TABLE
+
+#include <rtems/confdefs.h>
 
 #endif
 

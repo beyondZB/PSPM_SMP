@@ -12,7 +12,6 @@
 #endif
 
 #define CONFIGURE_INIT
-#include "system.h"
 #include "pspm.h"
 
 /* PSPM  relative contents */
@@ -20,7 +19,7 @@ extern PSPM_SMP pspm_smp_task_manager;
 
 #include <inttypes.h>
 
-const char rtems_test_name[] = "SMP PSPM";
+const char rtems_test_name[] = "PSPM SMP 01";
 
 void Loop() {
   volatile int i;
@@ -30,9 +29,9 @@ void Loop() {
 
 void pspm_smp_task_manager_initialize( int task_num, int quanta)
 {
-  pspm_smp_task_manager.Task_Node_array = (Task_node *)malloc(task_num * sizeof(Task_node *))
+  pspm_smp_task_manager.Task_Node_array = (Task_Node *)malloc(task_num * sizeof(Task_Node *));
   pspm_smp_task_manager.array_length = task_num;
-  pspm_smp_task_manager.quantum_length = quanta;
+  pspm_smp_task_manager.quantum_length = quanta; /* in number of ticks */
 }
 
 rtems_task Init(
@@ -79,7 +78,7 @@ rtems_task Init(
 
   /* The tail in the Chain is NULL, thus the tail node should not be processed */
   while( !rtems_chain_is_tail(chain, node) ){
-    task_node = rtems_container_of(node , Task_Node, rtems_chain_node);
+    task_node = RTEMS_CONTAINER_OF(node , Task_Node, Chain);
     task_id = task_node->id;
     status = rtems_task_create(
       rtems_build_name( 'P', 'T', 'A', task_id ),
@@ -93,9 +92,9 @@ rtems_task Init(
 
     locked_printf(" CPU %" PRIu32 " start periodic task TA%d\n", cpu_self, task_id);
     /* task_id is the argument for creating I-C-O Servants of a task, for more details, please refer to pspmimpl.c */
-    status = rtems_task_start( id, _comp_servant_routine, &task_id );
+    status = rtems_task_start( id, _comp_servant_routine, task_node->id);
     directive_failed( status, "task start" );
-    loop();
+    Loop();
   }
 
   /* Wait on the all tasks to run */
