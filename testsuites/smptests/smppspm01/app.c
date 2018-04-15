@@ -43,6 +43,7 @@ void c_servant_0(
 )
 {
   int input_data, i;
+  printf("Now is in c_servant_o\n");
   switch(source_id){
     /* Task ids start from zero and are sequential */
     case 0:
@@ -93,6 +94,7 @@ void c_servant_1(
 )
 {
   int input_data, i;
+  printf("Now is in c_servant_1\n");
   switch(source_id){
     /* Task ids start from zero and are sequential */
     case 1:

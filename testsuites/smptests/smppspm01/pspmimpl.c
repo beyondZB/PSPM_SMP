@@ -7,12 +7,12 @@
 #include "pspm.h"
 
 /* The length of message data, in number of word */
-#define MESSAGE_DATA_LENGTH 2
-/*One message is allowed to be sent to at most TARTGET_NUM_MAX tasks */
-#define TARTGET_NUM_MAX 20
+#define MESSAGE_DATA_LENGTH (2*sizeof(long))
+/*One message is allowed to be sent to at most TARGET_NUM_MAX tasks */
+#define TARGET_NUM_MAX 20
 
 /* The size of message buffer in each message queue */
-#define MESSAGE_BUFFER_LENGTH 5
+#define MESSAGE_BUFFER_LENGTH 2
 
 typedef struct _Message{
   void * address; /*The start address of the Message*/
@@ -24,6 +24,14 @@ typedef struct _Message{
 /***********************************************************/
 /*        Inner Function Declaration                       */
 /***********************************************************/
+
+/* @brief create message queue for each task
+ * This function must be invoked after task creations.
+ * message queue creation function will create three kinds of message queue in a task.
+ * Including I-queue, C-queue, O-queue
+ * @param[in] id The id is the pspm task id defined in task node
+ * */
+rtems_status_code _message_queue_create(tid_t id);
 
 /* @brief Obtain the global unique id of queue
  * Obtaining the id of message queue through task id and Queue type
@@ -87,13 +95,13 @@ static void _pspm_smp_message_queue_CsC( tid_t id, const void *buff, size_t size
  * @para in, the start address of the sent message
  * @para size_t, the length of the message
  * */
-inline rtems_status_code _message_queue_send_message(rtems_id qid, const void *in, size_t size_in);
+rtems_status_code _message_queue_send_message(rtems_id qid, const void *in, size_t size_in);
 /* @brief Called by _pspm_smp_message_queue_operations, for sending message to qid queue
  * @para qid, the id of the message queue, which is global unique
  * @para out , return the start address of the received message
  * @para size_t, return the length of the message
  * */
-inline rtems_status_code _message_queue_receive_message(rtems_id qid, void * out, size_t * size_out);
+rtems_status_code _message_queue_receive_message(rtems_id qid, void * out, size_t * size_out);
 
 
 /* @brief Obtaining the runnable of Servant by task id and Queue type
@@ -161,24 +169,23 @@ static inline Scheduler_EDF_SMP_Node * _scheduler_edf_smp_node_downcast( Schedul
 }
 
 /* Math function ceil and floor implementation */
-static float myfloor(float num)
+static double myfloor(double num)
 {
   if(num < 0){
-    int result = (int)num;
-    return (float)(result-1);
+    int64_t result = (int64_t)num;
+    return (double)(result-1);
   }else{
-    return (float)(int32_t)num;
+    return (double)(int64_t)num;
   }
 
 }
-static uint32_t myceil(float num)
+static uint64_t myceil(float num)
 {
   if(num < 0){
-    int result = (int)num;
-    return (float)(result);
+    return (double)(int64_t)num;
   }else{
-    int result = (int)num;
-    return (float)(result+1);
+    int64_t result = (int64_t)num;
+    return (double)(result+1);
   }
 }
 
@@ -294,7 +301,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
   rtems_id out_timer_id;
 
   /* Used for I-C or C-O message passing */
-  rtems_id target_id_array[TARTGET_NUM_MAX];
+  rtems_id target_id_array[TARGET_NUM_MAX];
   rtems_id target_num;
 
   /* Input data address and size */
@@ -319,6 +326,9 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
     printf("Error: No such a task (tid = %d) when creating a C-Servant\n", id);
     return;
   }
+
+  /* Creating the task before obtaining message queue */
+  _message_queue_create(id);
 
   /* Connect pspm smp task with rtems task */
   /* rtems/score/Percpu.h */
@@ -482,36 +492,36 @@ Task_Node_t  pspm_smp_task_create(
     Task_Type task_type,
     int64_t wcet,
     int64_t period
-    )
+)
 {
-  /* Allocate memory for the task node */
-  Task_Node *p_tnode = (Task_Node *)malloc(sizeof(Task_Node));
-  /* Initialize the elements in task node */
-  p_tnode->id = task_id;
-  p_tnode->type = task_type;
-  p_tnode->wcet = RTEMS_MILLISECONDS_TO_TICKS(wcet);
-  p_tnode->period = RTEMS_MILLISECONDS_TO_TICKS(period);
+    /* Allocate memory for the task node */
+    Task_Node *p_tnode = (Task_Node *)malloc(sizeof(Task_Node));
+    /* Initialize the elements in task node */
+    p_tnode->id = task_id;
+    p_tnode->type = task_type;
+    p_tnode->wcet = RTEMS_MILLISECONDS_TO_TICKS(wcet);
+    p_tnode->period = RTEMS_MILLISECONDS_TO_TICKS(period);
 
-  /*Note that : the quantum length is presented in number of ticks */
-  p_tnode->quant_wcet =  myceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
-  p_tnode->quant_period =  myceil((double)p_tnode->period / pspm_smp_task_manager.quantum_length);
-  p_tnode->utility = (double)p_tnode->wcet / p_tnode->period;
+    /*Note that : the quantum length is presented in number of ticks */
+    p_tnode->quant_wcet =  myceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
+    p_tnode->quant_period =  myceil((double)p_tnode->period / pspm_smp_task_manager.quantum_length);
+    p_tnode->utility = (double)p_tnode->wcet / p_tnode->period;
 
-  /* calculate the PD2 relative timing information for scheduling subtasks */
-  _pd2_subtasks_create(p_tnode);
+    /* calculate the PD2 relative timing information for scheduling subtasks */
+    _pd2_subtasks_create(p_tnode);
 
-  /* insert the task node into the task node chain */
-  rtems_chain_append_unprotected(&pspm_smp_task_manager.Task_Node_queue, &p_tnode->Chain);
+    // /* insert the task node into the task node chain */
+    rtems_chain_append(&(pspm_smp_task_manager.Task_Node_queue), &(p_tnode->Chain));
 
-  /* Important !!!
-   * Insert the task node into the task node array for accelerating searching task node */
-  if( pspm_smp_task_manager.Task_Node_array[task_id] != NULL){
-    printf("Error: current task exists, please use unique task id\n");
-  }else{
-    pspm_smp_task_manager.Task_Node_array[task_id] = p_tnode;
-  }
+    /* Important !!!
+    * Insert the task node into the task node array for accelerating searching task node */
+    if( pspm_smp_task_manager.Task_Node_array[task_id] != NULL){
+        printf("Error: current task exists, please use unique task id\n");
+    }else{
+        pspm_smp_task_manager.Task_Node_array[task_id] = p_tnode;
+    }
 
-  return (Task_Node_t)p_tnode;
+    return (Task_Node_t)p_tnode;
 }
 
 /* @brief Task Creation API
@@ -528,47 +538,12 @@ void pspm_smp_servant_create(
     OServantRunnable o_runnable
 )
 {
-  rtems_id qid;
-  rtems_name name;
-  rtems_status_code status;
-
   /* Set the Servant runnable of a Periodic task */
   ((Task_Node *)task)->i_servant.runnable = i_runnable;
   ((Task_Node *)task)->c_servant.runnable = c_runnable;
   ((Task_Node *)task)->o_servant.runnable = o_runnable;
-
-  /* Create IN_QUEUE, COMP_QUEUE, and OUT_QUEUE in each periodic task
-   * Notice: All message receive and send operations perform without blocking
-   * This requires that RTEMS_NO_WAIT option in rtems message passing mechanism.
-   * */
-
-  /* rtems_status_code rtems_message_queue_create(rtems_name name, uint32_t count, size_t max_message_size, rtems_attribute attribute_set, rtems_id *id); */
-  /**/
-  name = rtems_build_name('Q','U','I',((Task_Node*)task)->id);
-  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
-  if(status == RTEMS_SUCCESSFUL){
-    ((Task_Node *)task)->i_queue_id= qid;
-  }else{
-    printf("Error: The creation of In QUEUE in task %d failed\n", ((Task_Node *)task)->id);
-  }
-
-  name = rtems_build_name('Q','U','C',((Task_Node*)task)->id);
-  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
-  if(status == RTEMS_SUCCESSFUL){
-    ((Task_Node *)task)->c_queue_id= qid;
-  }else{
-    printf("Error: The creation of In QUEUE in task %d failed\n", ((Task_Node *)task)->id);
-  }
-
-  name = rtems_build_name('Q','U','O',((Task_Node*)task)->id);
-  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
-  if(status == RTEMS_SUCCESSFUL){
-    ((Task_Node *)task)->o_queue_id= qid;
-  }else{
-    printf("Error: The creation of In QUEUE in task %d failed\n", ((Task_Node *)task)->id);
-  }
-
 }
+
 
 
 
@@ -576,13 +551,58 @@ void pspm_smp_servant_create(
 /*        Message Passing Interfaces Implementation        */
 /***********************************************************/
 
-inline rtems_status_code _message_queue_send_message(rtems_id qid, const void * in, size_t size_in)
+rtems_status_code _message_queue_create(tid_t id)
+{
+  /* Create IN_QUEUE, COMP_QUEUE, and OUT_QUEUE in each periodic task
+   * Important: message queue function must be created after task being created
+   * Notice: All message receive and send operations perform without blocking
+   * This requires that RTEMS_NO_WAIT option in rtems message passing mechanism.
+   * */
+  rtems_id qid;
+  rtems_name name;
+  rtems_status_code status;
+
+  Task_Node *task = pspm_smp_task_manager.Task_Node_array[id];
+
+  /* rtems_status_code rtems_message_queue_create(rtems_name name, uint32_t count, size_t max_message_size, rtems_attribute attribute_set, rtems_id *id); */
+
+  name = rtems_build_name('Q','U','I',id);
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  if(status == RTEMS_SUCCESSFUL){
+    task->i_queue_id= qid;
+  }else{
+    printf("Error: The creation of In QUEUE in task %d failed, and the Error code is %d\n", id, status);
+    return status;
+  }
+
+  name = rtems_build_name('Q','U','C',id);
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  if(status == RTEMS_SUCCESSFUL){
+    task->o_queue_id= qid;
+  }else{
+    printf("Error: The creation of COMP QUEUE in task %d failed, and the Error code is %d\n", id, status);
+    return status;
+  }
+
+  name = rtems_build_name('Q','U','O',id);
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  if(status == RTEMS_SUCCESSFUL){
+    task->c_queue_id= qid;
+  }else{
+    printf("Error: The creation of Out QUEUE in task %d failed, and the Error code is %d\n", id, status);
+    return status;
+  }
+
+}
+
+
+rtems_status_code _message_queue_send_message(rtems_id qid, const void * in, size_t size_in)
 {
   return rtems_message_queue_send(qid, in ,size_in);
 }
 
 
-inline rtems_status_code _message_queue_receive_message(rtems_id qid, void * out, size_t * size_out)
+rtems_status_code _message_queue_receive_message(rtems_id qid, void * out, size_t * size_out)
 {
   /* No blocking receiving.
    * Since I-Servant has higher prior execution than C-Servants,

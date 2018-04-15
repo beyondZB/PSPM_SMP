@@ -29,7 +29,17 @@ void Loop() {
 
 void pspm_smp_task_manager_initialize( int task_num, int quanta)
 {
-  pspm_smp_task_manager.Task_Node_array = (Task_Node *)malloc(task_num * sizeof(Task_Node *));
+  int index;
+
+  /* Initialize the Chain control, which is required */
+  rtems_chain_initialize_empty(&pspm_smp_task_manager.Task_Node_queue);
+
+  /* Initialize the task node array */
+  pspm_smp_task_manager.Task_Node_array = (Task_Node **)malloc(task_num * sizeof(Task_Node *));
+  for(index = 0; index < task_num; ++index){
+    pspm_smp_task_manager.Task_Node_array[index] = NULL;
+  }
+  /* Initialize the array length and quantum length */
   pspm_smp_task_manager.array_length = task_num;
   pspm_smp_task_manager.quantum_length = quanta; /* in number of ticks */
 }
@@ -53,16 +63,6 @@ rtems_task Init(
   cpu_self = rtems_get_current_processor();
   cpu_num  = rtems_get_processor_count();
 
-  /* Initialize the most important structure */
-  pspm_smp_task_manager_initialize(TASK_NUM_MAX, QUANTUM_LENGTH);
-
-  /* Interpretation the application designed with pspm_smp programming paradigm */
-  main();
-
-  /* Obtaining the Head of PSPM task chain */
-  chain = & pspm_smp_task_manager.Task_Node_queue;
-  node = & chain->Head.Node;
-
   /* XXX - Delay a bit to allow debug messages from
    * startup to print.  This may need to go away when
    * debug messages go away.
@@ -72,13 +72,22 @@ rtems_task Init(
   locked_print_initialize();
 
   /* Output System information */
-  locked_printf(" Init Task run on CPU %" PRIu32 , cpu_self);
-  locked_printf(" The number of CPU is %" PRIu32 , cpu_num);
+  locked_printf(" Init Task run on CPU %" PRIu32 "\n", cpu_self);
+  locked_printf(" The number of CPU is %" PRIu32 "\n", cpu_num);
 
+  /* Initialize the most important structure */
+  pspm_smp_task_manager_initialize(TASK_NUM_MAX, QUANTUM_LENGTH);
+
+  /* Interpretation the application designed with pspm_smp programming paradigm */
+  main();
+
+  ///* Obtaining the first task node of PSPM task chain */
+  chain = &pspm_smp_task_manager.Task_Node_queue;
+  node = rtems_chain_first(chain);
 
   /* The tail in the Chain is NULL, thus the tail node should not be processed */
   while( !rtems_chain_is_tail(chain, node) ){
-    task_node = RTEMS_CONTAINER_OF(node , Task_Node, Chain);
+    task_node = RTEMS_CONTAINER_OF(node, Task_Node, Chain);
     task_id = task_node->id;
     status = rtems_task_create(
       rtems_build_name( 'P', 'T', 'A', task_id ),
@@ -92,16 +101,18 @@ rtems_task Init(
 
     locked_printf(" CPU %" PRIu32 " start periodic task TA%d\n", cpu_self, task_id);
     /* task_id is the argument for creating I-C-O Servants of a task, for more details, please refer to pspmimpl.c */
-    status = rtems_task_start( id, _comp_servant_routine, task_node->id);
+    status = rtems_task_start( id, _comp_servant_routine, task_id);
     directive_failed( status, "task start" );
     Loop();
+    node = rtems_chain_next(node);
   }
 
   /* Wait on the all tasks to run */
   TEST_END();
-  status = rtems_task_delete( RTEMS_SELF );
-  directive_failed( status, "rtems_task_delete of RTEMS_SELF" );
+  rtems_test_exit( 0 );
+  //status = rtems_task_delete( RTEMS_SELF );
+  //directive_failed( status, "rtems_task_delete of RTEMS_SELF" );
 
-  //rtems_test_exit( 0 );
+
 
 }
