@@ -367,6 +367,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
 
   /* Entry the while loop of a periodic rtems task */
   while(1){
+    printf("Make sure C-Servant starts\n");
     rtems_rate_monotonic_period(rate_monotonic_id, period);
 
     /* I-C-O Servants in the same task communicating */
