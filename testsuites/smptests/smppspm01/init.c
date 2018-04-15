@@ -109,9 +109,9 @@ rtems_task Init(
 
   /* Wait on the all tasks to run */
   TEST_END();
-  rtems_test_exit( 0 );
-  //status = rtems_task_delete( RTEMS_SELF );
-  //directive_failed( status, "rtems_task_delete of RTEMS_SELF" );
+  //rtems_test_exit( 0 );
+  status = rtems_task_delete( RTEMS_SELF );
+  directive_failed( status, "rtems_task_delete of RTEMS_SELF" );
 
 
 
