@@ -40,7 +40,7 @@ rtems_task Init(
   /* XXX - Delay a bit to allow debug messages from
    * startup to print.  This may need to go away when
    * debug messages go away.
-   */ 
+   */
   Loop();
 
   TEST_BEGIN();
@@ -74,7 +74,7 @@ rtems_task Init(
       Loop();
     }
   }
-  
+
   /* Wait on the all tasks to run */
   while (1) {
     allDone = true;

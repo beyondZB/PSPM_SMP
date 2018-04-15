@@ -56,6 +56,7 @@ AC_CHECK_DECLS([pthread_getattr_np],[],[],[[
 # Explicitly list all Makefiles here
 AC_CONFIG_FILES([Makefile
 smpopenmp01/Makefile
+smppspm01/Makefile
 smp01/Makefile
 smp02/Makefile
 smp03/Makefile

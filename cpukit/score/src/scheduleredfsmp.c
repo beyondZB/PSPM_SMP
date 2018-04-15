@@ -21,6 +21,40 @@
 #include <rtems/score/scheduleredfsmp.h>
 #include <rtems/score/schedulersmpimpl.h>
 
+/* Important !!!
+ * @brief This is the core structure to connect PSPM SMP to rtems */
+PSPM_SMP pspm_smp_task_manager;
+
+
+/* obtain the current subtask of a task node */
+Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_current(
+    Scheduler_EDF_SMP_Node * scheduler_edf_smp_node
+)
+{
+    /* return the current subtask_node */
+    Subtask_Node * current = scheduler_edf_smp_node->current;
+
+    /* Current points to the next subtask */
+    Chain_Node * next = _Chain_Next(&current->Chain);
+    scheduler_edf_smp_node->current = RTEMS_CONTAINER_OF(next, Subtask_Node, Chain);
+
+    return current;
+}
+
+/* reset the current subtask of a task node, and return the first subtask node */
+Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_reset(
+    Scheduler_EDF_SMP_Node * scheduler_edf_smp_node
+)
+{
+    Task_Node * task_node = scheduler_edf_smp_node->task_node;
+    Chain_Node * first_node = _Chain_First(& task_node->Subtask_Node_queue );
+
+    /* Set the current pointer to the first subtask node in the task node */
+    scheduler_edf_smp_node->current = RTEMS_CONTAINER_OF(first_node, Subtask_Node, Chain);
+
+    return scheduler_edf_smp_node->current;
+}
+
 static inline Scheduler_EDF_SMP_Context *
 _Scheduler_EDF_SMP_Get_context( const Scheduler_Control *scheduler )
 {
