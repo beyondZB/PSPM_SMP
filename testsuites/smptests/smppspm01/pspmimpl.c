@@ -31,7 +31,7 @@ typedef struct _Message{
  * Including I-queue, C-queue, O-queue
  * @param[in] id The id is the pspm task id defined in task node
  * */
-rtems_status_code _message_queue_create(tid_t id);
+void _message_queue_create(tid_t id);
 
 /* @brief Obtain the global unique id of queue
  * Obtaining the id of message queue through task id and Queue type
@@ -551,7 +551,7 @@ void pspm_smp_servant_create(
 /*        Message Passing Interfaces Implementation        */
 /***********************************************************/
 
-rtems_status_code _message_queue_create(tid_t id)
+void _message_queue_create(tid_t id)
 {
   /* Create IN_QUEUE, COMP_QUEUE, and OUT_QUEUE in each periodic task
    * Important: message queue function must be created after task being created
@@ -571,8 +571,7 @@ rtems_status_code _message_queue_create(tid_t id)
   if(status == RTEMS_SUCCESSFUL){
     task->i_queue_id= qid;
   }else{
-    printf("Error: The creation of In QUEUE in task %d failed, and the Error code is %d\n", id, status);
-    return status;
+    directive_failed(status, "message queue in queue create");
   }
 
   name = rtems_build_name('Q','U','C',id);
@@ -580,8 +579,7 @@ rtems_status_code _message_queue_create(tid_t id)
   if(status == RTEMS_SUCCESSFUL){
     task->o_queue_id= qid;
   }else{
-    printf("Error: The creation of COMP QUEUE in task %d failed, and the Error code is %d\n", id, status);
-    return status;
+    directive_failed(status, "message queue comp queue create");
   }
 
   name = rtems_build_name('Q','U','O',id);
@@ -589,8 +587,7 @@ rtems_status_code _message_queue_create(tid_t id)
   if(status == RTEMS_SUCCESSFUL){
     task->c_queue_id= qid;
   }else{
-    printf("Error: The creation of Out QUEUE in task %d failed, and the Error code is %d\n", id, status);
-    return status;
+    directive_failed(status, "message queue out queue create");
   }
 
 }
@@ -622,28 +619,18 @@ static void _pspm_smp_message_queue_CsC(
     )
 {
   rtems_id comp_qid;
-
-  if( buff == NULL ){
-    printf("Error: The target address of message send is NULL\n");
-    return;
-  }
-
-  if( size <= 0 || size > MESSAGE_DATA_LENGTH ){
-    printf("Error: The specific size of message is out of defined length\n");
-    return ;
-  }
+  rtems_status_code status;
 
   comp_qid = _get_message_queue(id, COMP_QUEUE);
   if( comp_qid != -1 ){
-    if(RTEMS_SUCCESSFUL == _message_queue_send_message(comp_qid, buff, size)){
+    status = _message_queue_send_message(comp_qid, buff, size);
+    if(RTEMS_SUCCESSFUL == status){
       return;
     }else{
-      printf("Error: Message Send Failed\n");
-      return ;
+      directive_failed(status, "message queue CsC");
     }
   } else{
     printf("Error: No such a task (tid = %d) is found\n", id);
-    return ;
   }
 }
 
@@ -656,14 +643,16 @@ static void _pspm_smp_message_queue_CrC(
     )
 {
   rtems_id comp_qid;
+  rtems_status_code status;
 
   /* get the id of comp_queue in current task */
   comp_qid = _get_message_queue(id, COMP_QUEUE);
   if( comp_qid != -1 ){
-    if(RTEMS_SUCCESSFUL == _message_queue_receive_message(comp_qid, buff, size)){
+    status = _message_queue_receive_message(comp_qid, buff, size);
+    if(status == RTEMS_SUCCESSFUL){
       *source_id = ((Message_t *)buff)->id;
-    }else{
-      printf("Error: Message Received Failed\n");
+    } else{
+      directive_failed(status, "message queue CrC");
       *size = 0;
     }
   }else{
@@ -675,13 +664,15 @@ static void _pspm_smp_message_queue_CrC(
 static void _pspm_smp_message_queue_IsC( tid_t id, const void *in, size_t size_in)
 {
   rtems_id in_qid;
+  rtems_status_code status;
 
   in_qid = _get_message_queue(id, IN_QUEUE);
   if( in_qid != -1 ){
-    if(RTEMS_SUCCESSFUL == _message_queue_send_message(in_qid, in, size_in)){
+    status = _message_queue_send_message(in_qid, in, size_in);
+    if(RTEMS_SUCCESSFUL == status){
       return;
     }else{
-      printf("Error: Message Send Failed\n");
+      directive_failed(status, "message queue IsC");
     }
   }else{
     printf("Error: No such a task (tid = %d) is found\n", id);
@@ -694,13 +685,15 @@ static void _pspm_smp_message_queue_IsC( tid_t id, const void *in, size_t size_i
 static void _pspm_smp_message_queue_OrC( tid_t id, void *out, size_t * size_out)
 {
   rtems_id in_qid;
+  rtems_status_code status;
 
   in_qid = _get_message_queue(id, OUT_QUEUE);
   if( in_qid != -1 ){
-    if(RTEMS_SUCCESSFUL == _message_queue_receive_message(in_qid, out, size_out)){
+    status = _message_queue_receive_message(in_qid, out, size_out);
+    if(RTEMS_SUCCESSFUL == status){
       return;
     }else{
-      printf("Error: Message Received Failed\n");
+      directive_failed(status, "message queue OrC");
       *size_out  = 0;
     }
   } else{
@@ -715,13 +708,15 @@ static void _pspm_smp_message_queue_OrC( tid_t id, void *out, size_t * size_out)
 static void _pspm_smp_message_queue_CrI(tid_t id, void * in, size_t * size_in)
 {
   rtems_id in_qid;
+  rtems_status_code status;
 
   in_qid = _get_message_queue(id, IN_QUEUE);
   if( in_qid != -1 ){
-    if(RTEMS_SUCCESSFUL == _message_queue_receive_message(in_qid, in, size_in)){
+    status = _message_queue_receive_message(in_qid, in, size_in);
+    if(RTEMS_SUCCESSFUL == status){
       return;
     }else{
-      printf("Error: Message Received Failed\n");
+      directive_failed(status, "message queue CrI");
       *size_in = 0;
     }
   } else{
@@ -733,13 +728,15 @@ static void _pspm_smp_message_queue_CrI(tid_t id, void * in, size_t * size_in)
 static void _pspm_smp_message_queue_CsO(tid_t id, const void * out, size_t size_in)
 {
   rtems_id out_qid;
+  rtems_status_code status;
 
   out_qid = _get_message_queue(id, OUT_QUEUE);
   if( out_qid != -1 ){
-    if(RTEMS_SUCCESSFUL == _message_queue_send_message(out_qid, out, size_in)){
+    status = _message_queue_send_message(out_qid, out, size_in);
+    if(RTEMS_SUCCESSFUL == status){
       return;
     }else{
-      printf("Error: Message Send Failed\n");
+      directive_failed(status, "message queue CsO");
     }
   }else{
     printf("Error: No such a task (tid = %d) is found\n", id);
