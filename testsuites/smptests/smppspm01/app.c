@@ -5,136 +5,90 @@
  * */
 #include "app.h"
 
-void i_servant_0(void * data_isc, size_t *size_isc)
+void i_servant_0(pspm_smp_message *msg)
 {
   int i;
 
-  *(uint32_t *)data_isc = 10;
-  *(size_t *)size_isc = 1;
+  msg->address[0] = 10;
+  msg->address[1] = 20;
+  msg->size = 2;
+  /* the message sender will be setted automatically by the runtime */
 
   printf("Task 0 Input:\n");
-  for( i = 0; i < *size_isc; ++i, ++data_isc){
-    printf("No.%d: %u\n", i+1, *(uint32_t *)data_isc);
+  for( i = 0; i < msg->size; ++i){
+    printf("No.%d: %u\n", i+1, msg->address[i]);
   }
 }
 
-void i_servant_1(void * data_isc, size_t *size_isc)
+void i_servant_1(pspm_smp_message *msg)
 {
   int i;
 
-  *(uint32_t *)data_isc = 20;
-  *(size_t *)size_isc = 1;
+  msg->address[0] = 100;
+  msg->size = 1;
+  /* the message sender will be setted automatically by the runtime */
 
   printf("Task 1 Input:\n");
-  for( i = 0; i < *size_isc; ++i, ++data_isc){
-    printf("No.%d: %u\n", i+1, *(uint32_t *)data_isc);
+  for( i = 0; i < msg->size; ++i){
+    printf("No.%d: %u\n", i+1, msg->address[i]);
   }
-
 }
 
-void c_servant_0(
-    tid_t source_id,
-    void *data_cri,
-    size_t size_cri,
-    tid_t *target_id,
-    int32_t *target_num,
-    void *data_cso,
-    size_t *size_cso
-)
+void c_servant_0( pspm_smp_message * msg )
 {
-  int input_data, i;
-  printf("Now is in c_servant_o\n");
-  switch(source_id){
-    /* Task ids start from zero and are sequential */
-    case 0:
-      for( i = 0; i < size_cri; ++i ){
-        input_data = *(int *)data_cri;
+  int i;
+  printf("Now is in c_servant_0\n");
 
-        /* Do Something Here */
-        input_data *= 2;
-
-        /* Output the processing result */
-        *(uint32_t *)data_cso = input_data;
-        (uint32_t *)data_cso++;
-      }
-
-      *(size_t *)size_cso = i+1;
-      *(tid_t *)target_id = 0;
-      break;
-    case 1:
-      for( i = 0; i < size_cri; ++i ){
-        input_data = *(int *)data_cri;
-
-        /* Do Something Here */
-        input_data *= 4;
-
-        /* Output the processing result */
-        *(uint32_t *)data_cso = input_data;
-        (uint32_t *)data_cso++ ;
-      }
-
-      *(size_t *)size_cso = i+1;
-      *(tid_t *)target_id = 0; /* send message to task 0, the message will be sent to OUT_QUEUE of task 0 */
-      //*target_id = 1;  /* Otherwise, the message will be sent to COMP_QUEUE of task 1 */
-      break;
-    default:
-      printf("Error: No such kind of communication relationship defined\n");
-
+  /* Obtaining message from IN_QUEUE and send them to OUT_QUEUE */
+  for(i = 0; i < msg->size; ++i){
+      msg->address[i] *=100;
   }
+
+  /* Send the updated message to the COMP_QUEUE of task 1 */
+  pspm_smp_message_queue_send(1, msg);
+
+
 }
 
-void c_servant_1(
-    tid_t source_id,
-    void *data_cri,
-    size_t size_cri,
-    tid_t *target_id,
-    int32_t *target_num,
-    void *data_cso,
-    size_t *size_cso
-)
+void c_servant_1( pspm_smp_message * msg )
 {
-  int input_data, i;
-  printf("Now is in c_servant_1\n");
-  switch(source_id){
-    /* Task ids start from zero and are sequential */
-    case 1:
-      for( i = 0; i < size_cri; ++i, ++data_cso, ++data_cri ){
-        input_data = *(int *)data_cri;
+  int i;
+  pspm_smp_message message;
+  pspm_status_code sc;
+  printf("Now is in c_servant_0\n");
 
-        /* Do Something Here */
-        input_data *= 10;
-
-        /* Output the processing result */
-        *(uint32_t *)data_cso = input_data;
-      }
-
-      *(size_t *)size_cso = i+1;
-
-      /* Send message to task 0 and 1 */
-      *(tid_t *)target_id = 0;
-      *((tid_t *)target_id + 1) = 1;
-      break;
-    default:
-      printf("Error: No such kind of communication relationship defined\n");
+  /* Obtaining message from IN_QUEUE and send them to OUT_QUEUE */
+  for(i = 0; i < msg->size; ++i){
+    msg->address[i] *=100;
   }
+
+  while(sc = pspm_smp_message_queue_receive(&message)){
+      if(sc == UNSATISFIED){
+          break;
+      }
+      printf("The message sender is %d\n", message.sender);
+      for(i = 0; i < msg->size; ++i){
+          msg->address[i] = msg->address[i] * message.address[0] - message.address[1];
+      }
+  }
+
 }
 
 
-void o_servant_0(void *data_orc, size_t size_orc)
+void o_servant_0(pspm_smp_message *msg)
 {
   int i;
   printf("Task 0 Output:\n");
-  for( i = 0; i < size_orc; ++i, ++data_orc){
-    printf("No.%d: %u\n", i+1, *(uint32_t *)data_orc);
+  for( i = 0; i < msg->size; ++i){
+    printf("No.%d: %u\n", i+1, msg->address[i]);
   }
 }
 
-void o_servant_1(void *data_orc, size_t size_orc)
+void o_servant_1(pspm_smp_message * msg)
 {
   int i;
   printf("Task 1 Output:\n");
-  for( i = 0; i < size_orc; ++i, ++data_orc){
-    printf("No.%d: %d\n", i+1, *(uint32_t *)data_orc);
+  for( i = 0; i < msg->size; ++i){
+    printf("No.%d: %u\n", i+1, msg->address[i]);
   }
-
 }

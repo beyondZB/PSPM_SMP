@@ -35,12 +35,12 @@
 /****************************************************************************\
  * PROJECT     : MPC5643L
  * FILE        : mpc5643l.h
- * 
+ *
  * DESCRIPTION : This is the header file describing the register
- *               set for the named projects. 
- * 
- * COPYRIGHT   : (c) 2009, Freescale Semiconductor & ST Microelectronics 
- * 
+ *               set for the named projects.
+ *
+ * COPYRIGHT   : (c) 2009, Freescale Semiconductor & ST Microelectronics
+ *
  * VERSION     : 1.04
  * RELEASE DATE        : Tue Dec  1 2009
  * CREATION DATE       : Thu Oct  8 13:53:51 CEST 2009
@@ -51,39 +51,39 @@
 /*   >>>>  NOTE! this file is auto-generated please do not edit it!  <<<<   */
 
 /****************************************************************************\
- * Example instantiation and use:            
- *                                           
- *  <MODULE>.<REGISTER>.B.<BIT> = 1;         
+ * Example instantiation and use:
+ *
+ *  <MODULE>.<REGISTER>.B.<BIT> = 1;
  *  <MODULE>.<REGISTER>.R       = 0x10000000;
- *                                           
+ *
 \****************************************************************************/
 
 /*
- *  LICENSE: 
+ *  LICENSE:
  *  Copyright (c) 2006 Freescale Semiconductor
- *  
- *  Permission is hereby granted, free of charge, to any person 
- *  obtaining a copy of this software and associated documentation 
- *  files (the "Software"), to deal in the Software without 
- *  restriction, including without limitation the rights to use, 
- *  copy, modify, merge, publish, distribute, sublicense, and/or 
- *  sell copies of the Software, and to permit persons to whom the 
- *  Software is furnished to do so, subject to the following 
+ *
+ *  Permission is hereby granted, free of charge, to any person
+ *  obtaining a copy of this software and associated documentation
+ *  files (the "Software"), to deal in the Software without
+ *  restriction, including without limitation the rights to use,
+ *  copy, modify, merge, publish, distribute, sublicense, and/or
+ *  sell copies of the Software, and to permit persons to whom the
+ *  Software is furnished to do so, subject to the following
  *  conditions:
- *  
- *  The above copyright notice and this permission notice 
- *  shall be included in all copies or substantial portions 
+ *
+ *  The above copyright notice and this permission notice
+ *  shall be included in all copies or substantial portions
  *  of the Software.
- *  
- *  THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
- *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
- *  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
- *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
- *  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
- *  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ *
+ *  THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  *  DEALINGS IN THE SOFTWARE.
- *  
+ *
  */
 
 #ifndef _leopard_H_  /* prevents multiple inclusions of this file */
@@ -138,7 +138,7 @@ extern "C" {
 /* Global definitions and aliases */
 /*                                                              */
 /****************************************************************/
- 
+
 /*
    Platform blocks that are only accessible by the second core (core 1) when
     the device is in DPM mode. The block definition is equivalent to the one
@@ -154,7 +154,7 @@ extern "C" {
 #define  STM_1         (*(volatile STM_tag*)      0x8FF3C000UL)
 #define  SPP_MCM_1     (*(volatile SPP_MCM_tag*)  0x8FF40000UL)
 #define  SPP_DMA2_1    (*(volatile SPP_DMA2_tag*) 0x8FF44000UL)
-#define  INTC_1        (*(volatile INTC_tag*)     0x8FF48000UL)  
+#define  INTC_1        (*(volatile INTC_tag*)     0x8FF48000UL)
 
 /*
    Platform blocks that are only accessible by the second core (core 1) when
@@ -175,25 +175,25 @@ extern "C" {
 #define  INTC_DPM      INTC_1
 
 /* Aliases for Pictus Module names */
-#define CAN_0     	FLEXCAN_A 
-#define CAN_1     	FLEXCAN_B 
-#define CTU_0     	CTU   
-#define DFLASH    	CRC   
-#define DMAMUX    	DMA_CH_MUX 
-#define DSPI_0    	DSPI_A 
-#define DSPI_1    	DSPI_B 
-#define DSPI_2    	DSPI_C 
+#define CAN_0     	FLEXCAN_A
+#define CAN_1     	FLEXCAN_B
+#define CTU_0     	CTU
+#define DFLASH    	CRC
+#define DMAMUX    	DMA_CH_MUX
+#define DSPI_0    	DSPI_A
+#define DSPI_1    	DSPI_B
+#define DSPI_2    	DSPI_C
 #define EDMA      	(*(volatile struct EDMA_tag *) 0xFFF44000UL)
 #define ETIMER_0  	mcTIMER0
-#define ETIMER_1  	mcTIMER1 
-#define FLEXPWM_0 	mcPWM_A 
-#define FLEXPWM_1 	mcPWM_B 
-#define LINFLEX_0 	LINFLEX0 
-#define LINFLEX_1 	LINFLEX1 
-#define MCM_       	SPP_MCM 
-#define PIT       	PIT_RTI 
-#define SIU       	SIUL  
-#define WKUP      	WKPU 
+#define ETIMER_1  	mcTIMER1
+#define FLEXPWM_0 	mcPWM_A
+#define FLEXPWM_1 	mcPWM_B
+#define LINFLEX_0 	LINFLEX0
+#define LINFLEX_1 	LINFLEX1
+#define MCM_       	SPP_MCM
+#define PIT       	PIT_RTI
+#define SIU       	SIUL
+#define WKUP      	WKPU
 #define ADC_0      	ADC0
 #define ADC_1      	ADC1
 
@@ -531,18 +531,18 @@ extern "C" {
    typedef union {   /* PFLASH2P_LCA_PFCR1 - Platform Flash Configuration Register 1 */
       uint32_t R;
       struct {
-#ifndef USE_FIELD_ALIASES_CFLASH         
-         uint32_t  B1_APC:5;          /* Bank 1 Address Pipelining Control */          
-         uint32_t  B1_WWSC:5;         /* Bank 1 Write Wait State Control */            
-         uint32_t  B1_RWSC:5;         /* Bank 1 Read Wait State Control */             
-         uint32_t  B1_RWWC2:1;        /* Bank1 Read While Write Control, bit 2 */      
-         uint32_t  B1_RWWC1:1;        /* Bank1 Read While Write Control, bit 1 */      
-         uint32_t:6;                                                                   
-         uint32_t  B1_P1_BFE:1;       /* Bank 1 Port 1 Buffer Enable */                
-         uint32_t  B1_RWWC0:1;        /* Bank1 Read While Write Control, bit 0 */      
-         uint32_t:6;                                                                   
+#ifndef USE_FIELD_ALIASES_CFLASH
+         uint32_t  B1_APC:5;          /* Bank 1 Address Pipelining Control */
+         uint32_t  B1_WWSC:5;         /* Bank 1 Write Wait State Control */
+         uint32_t  B1_RWSC:5;         /* Bank 1 Read Wait State Control */
+         uint32_t  B1_RWWC2:1;        /* Bank1 Read While Write Control, bit 2 */
+         uint32_t  B1_RWWC1:1;        /* Bank1 Read While Write Control, bit 1 */
+         uint32_t:6;
+         uint32_t  B1_P1_BFE:1;       /* Bank 1 Port 1 Buffer Enable */
+         uint32_t  B1_RWWC0:1;        /* Bank1 Read While Write Control, bit 0 */
+         uint32_t:6;
          uint32_t  B1_P0_BFE:1;       /* Bank 1 Port 0 Buffer Enable */
-#else         
+#else
          uint32_t BK1_APC:5;
          uint32_t BK1_WWSC:5;
          uint32_t BK1_RWSC:5;
@@ -552,7 +552,7 @@ extern "C" {
          uint32_t B0_P1_BFE:1;
          uint32_t BK1_RWWC0:1;
          uint32_t:6;
-         uint32_t B1_P0_BFE:1;               
+         uint32_t B1_P0_BFE:1;
 #endif
       } B;
    } CFLASH_PFCR1_32B_tag;
@@ -614,7 +614,7 @@ extern "C" {
       struct {
 #ifndef USE_FIELD_ALIASES_CFLASH
          uint32_t  MISR:32;           /* Multiple Input Signature */
-#else		 
+#else
          uint32_t  MS:32;         /* deprecated - please avoid */
 #endif
       } B;
@@ -4704,7 +4704,7 @@ extern "C" {
       PLLD_CR_32B_tag CR;                  /* offset: 0x0000 size: 32 bit */
                                    /* PLLD_MR - PLLD Modulation Register */
       PLLD_MR_32B_tag MR;                  /* offset: 0x0004 size: 32 bit */
-	  
+
 	  uint32_t plld_reserved[6];
    } PLLD_tag;
 
@@ -4993,85 +4993,85 @@ extern "C" {
             union {
                              /* Auxiliary Clock Select Control Registers */
                CGM_AC_SC_32B_tag AC0_SC;      /* offset: 0x0380 size: 32 bit */
-            
+
                CGM_AC_SC_32B_tag AC0SC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                       /* Auxiliary Clock Divider Configuration Registers */
                CGM_AC_DC0_3_32B_tag AC0_DC0_3;  /* offset: 0x0384 size: 32 bit */
-            
+
                CGM_AC_DC0_3_32B_tag AC0DC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                              /* Auxiliary Clock Select Control Registers */
                CGM_AC_SC_32B_tag AC1_SC;      /* offset: 0x0388 size: 32 bit */
-            
+
                CGM_AC_SC_32B_tag AC1SC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                       /* Auxiliary Clock Divider Configuration Registers */
                CGM_AC_DC0_3_32B_tag AC1_DC0_3;  /* offset: 0x038C size: 32 bit */
-            
+
                CGM_AC_DC0_3_32B_tag AC1DC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                              /* Auxiliary Clock Select Control Registers */
                CGM_AC_SC_32B_tag AC2_SC;      /* offset: 0x0390 size: 32 bit */
-            
+
                CGM_AC_SC_32B_tag AC2SC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                       /* Auxiliary Clock Divider Configuration Registers */
                CGM_AC_DC0_3_32B_tag AC2_DC0_3;  /* offset: 0x0394 size: 32 bit */
-            
+
                CGM_AC_DC0_3_32B_tag AC2DC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                              /* Auxiliary Clock Select Control Registers */
                CGM_AC_SC_32B_tag AC3_SC;      /* offset: 0x0398 size: 32 bit */
-            
+
                CGM_AC_SC_32B_tag AC3SC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                       /* Auxiliary Clock Divider Configuration Registers */
                CGM_AC_DC0_3_32B_tag AC3_DC0_3;  /* offset: 0x039C size: 32 bit */
-            
+
                CGM_AC_DC0_3_32B_tag AC3DC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                              /* Auxiliary Clock Select Control Registers */
                CGM_AC_SC_32B_tag AC4_SC;      /* offset: 0x03A0 size: 32 bit */
-            
+
                CGM_AC_SC_32B_tag AC4SC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
 			union {
                       /* Auxiliary Clock Divider Configuration Registers */
 				CGM_AC_DC0_3_32B_tag AC4_DC0_3;  /* offset: 0x03A4 size: 32 bit */
-				
+
                 CGM_AC_DC0_3_32B_tag AC4DC;  /* deprecated - please avoid */
 			};
             union {
                              /* Auxiliary Clock Select Control Registers */
                CGM_AC_SC_32B_tag AC5_SC;      /* offset: 0x03A8 size: 32 bit */
-            
+
                CGM_AC_SC_32B_tag AC5SC;  /* deprecated - please avoid */
-            
-            };  
+
+            };
             union {
                       /* Auxiliary Clock Divider Configuration Registers */
                CGM_AC_DC0_3_32B_tag AC5_DC0_3;  /* offset: 0x03AC size: 32 bit */
-            
+
                CGM_AC_DC0_3_32B_tag AC5DC;  /* deprecated - please avoid */
-            
+
             };
          };
 
@@ -5615,7 +5615,7 @@ extern "C" {
       union {
                                                 /*  Register set CHANNEL */
          PIT_RTI_CHANNEL_tag CHANNEL[4];   /* offset: 0x0100  (0x0010 x 4) */
-		 
+
 		 PIT_RTI_CHANNEL_tag CH[4];   /* offset: 0x0100  (0x0010 x 4) */
 
          struct {
@@ -6445,9 +6445,9 @@ extern "C" {
          uint32_t:1;
 #ifndef USE_FIELD_ALIASES_ADC
          uint32_t  INSAMP:8;          /* configuration bits for the SAMPLING PHASE duration */
-#else		 
+#else
          uint32_t  INPSAMP:8;
-#endif		 
+#endif
       } B;
    } ADC_CTR_32B_tag;
 
@@ -6685,11 +6685,11 @@ extern "C" {
          uint32_t:15;
          uint32_t  OFFSETLOAD:1;      /* load_offset */
          uint32_t:8;
-#ifndef USE_FIELD_ALIASES_ADC		 
+#ifndef USE_FIELD_ALIASES_ADC
          uint32_t  OFFSET_WORD:8;     /* OFFSET word coeff.generated at the end of offset cancellation is lathed int o this register */
-#else		
-         uint32_t  OFFSETWORD:8;  
-#endif		 
+#else
+         uint32_t  OFFSETWORD:8;
+#endif
       } B;
    } ADC_OFFWR_32B_tag;
 
@@ -7761,42 +7761,42 @@ extern "C" {
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN7:1;         /* Enable DMA interface for FIFO 7 */
 #else
-         uint16_t  DMAEN7:1;         /* Enable DMA interface for FIFO 7 */	
+         uint16_t  DMAEN7:1;         /* Enable DMA interface for FIFO 7 */
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN6:1;         /* Enable DMA interface for FIFO 6 */
 #else
-         uint16_t  DMAEN6:1;         /* Enable DMA interface for FIFO 6 */	
+         uint16_t  DMAEN6:1;         /* Enable DMA interface for FIFO 6 */
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN5:1;         /* Enable DMA interface for FIFO 5 */
 #else
-         uint16_t  DMAEN5:1;         /* Enable DMA interface for FIFO 5 */	
+         uint16_t  DMAEN5:1;         /* Enable DMA interface for FIFO 5 */
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN4:1;         /* Enable DMA interface for FIFO 4 */
 #else
-         uint16_t  DMAEN4:1;         /* Enable DMA interface for FIFO 4 */	
+         uint16_t  DMAEN4:1;         /* Enable DMA interface for FIFO 4 */
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN3:1;         /* Enable DMA interface for FIFO 3 */
 #else
-         uint16_t  DMAEN3:1;         /* Enable DMA interface for FIFO 3 */	
+         uint16_t  DMAEN3:1;         /* Enable DMA interface for FIFO 3 */
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN2:1;         /* Enable DMA interface for FIFO 2 */
 #else
-         uint16_t  DMAEN2:1;         /* Enable DMA interface for FIFO 2 */	
+         uint16_t  DMAEN2:1;         /* Enable DMA interface for FIFO 2 */
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN1:1;         /* Enable DMA interface for FIFO 1 */
 #else
-         uint16_t  DMAEN1:1;         /* Enable DMA interface for FIFO 1 */	
+         uint16_t  DMAEN1:1;         /* Enable DMA interface for FIFO 1 */
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  DMA_EN0:1;         /* Enable DMA interface for FIFO 0 */
 #else
-         uint16_t  DMAEN0:1;         /* Enable DMA interface for FIFO 0 */	
+         uint16_t  DMAEN0:1;         /* Enable DMA interface for FIFO 0 */
 #endif
       } B;
    } CTU_CR_16B_tag;
@@ -7975,98 +7975,98 @@ extern "C" {
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  ADC_I:1;           /* ADC Command Interrupt Flag */
 #else
-         uint16_t  ADC:1;        
+         uint16_t  ADC:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T7_I:1;            /* Trigger 7  Interrupt Flag */
 #else
-         uint16_t  T7:1;        
+         uint16_t  T7:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T6_I:1;            /* Trigger 6  Interrupt Flag */
 #else
-         uint16_t  T6:1;        
+         uint16_t  T6:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T5_I:1;            /* Trigger 5  Interrupt Flag */
 #else
-         uint16_t  T5:1;        
+         uint16_t  T5:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T4_I:1;            /* Trigger 4  Interrupt Flag */
 #else
-         uint16_t  T4:1;        
+         uint16_t  T4:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T3_I:1;            /* Trigger 3  Interrupt Flag */
 #else
-         uint16_t  T3:1;        
+         uint16_t  T3:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T2_I:1;            /* Trigger 2  Interrupt Flag */
 #else
-         uint16_t  T2:1;        
+         uint16_t  T2:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T1_I:1;            /* Trigger 1  Interrupt Flag */
 #else
-         uint16_t  T1:1;        
+         uint16_t  T1:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T0_I:1;            /* Trigger 0  Interrupt Flag */
 #else
-         uint16_t  T0:1;        
-#endif  
+         uint16_t  T0:1;
+#endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  MRS_I:1;           /* MRS Interrupt Flag */
 #else
-         uint16_t  MRS:1;        
+         uint16_t  MRS:1;
 #endif
       } B;
    } CTU_CTUIFR_16B_tag;
 
    typedef union {   /* CTU Interrupt/DMA Register */
       uint16_t R;
-      struct {       
+      struct {
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T7_I:1;            /* Trigger 7  Interrupt Enable */
 #else
-         uint16_t  T7IE:1;        
+         uint16_t  T7IE:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T6_I:1;            /* Trigger 6  Interrupt Enable */
 #else
-         uint16_t  T6IE:1;        
+         uint16_t  T6IE:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T5_I:1;            /* Trigger 5  Interrupt Enable */
 #else
-         uint16_t  T5IE:1;        
+         uint16_t  T5IE:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T4_I:1;            /* Trigger 4  Interrupt Enable */
 #else
-         uint16_t  T4IE:1;        
+         uint16_t  T4IE:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T3_I:1;            /* Trigger 3  Interrupt Enable */
 #else
-         uint16_t  T3IE:1;        
+         uint16_t  T3IE:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T2_I:1;            /* Trigger 2  Interrupt Enable */
 #else
-         uint16_t  T2IE:1;        
+         uint16_t  T2IE:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T1_I:1;            /* Trigger 1  Interrupt Enable */
 #else
-         uint16_t  T1IE:1;        
+         uint16_t  T1IE:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T0_I:1;            /* Trigger 0  Interrupt Enable */
 #else
-         uint16_t  T0IE:1;        
+         uint16_t  T0IE:1;
 #endif
          uint16_t:2;
          uint16_t  SAF_CNT_B_EN:1;    /* Conversion time counter enabled */
@@ -8075,12 +8075,12 @@ extern "C" {
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  MRS_DMAE:1;        /* DMA Transfer Enable */
 #else
-         uint16_t  MRSDMAE:1;        
-#endif      
+         uint16_t  MRSDMAE:1;
+#endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  MRS_IE:1;          /* MRS Interrupt Enable */
 #else
-         uint16_t  MRSIE:1;        
+         uint16_t  MRSIE:1;
 #endif
          uint16_t  IEE:1;             /* Interrupt Error Enable */
       } B;
@@ -8093,7 +8093,7 @@ extern "C" {
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  COTR_COTR:8;       /* Control On-Time Register and Guard Time */
 #else
-         uint16_t  COTR:8;        
+         uint16_t  COTR:8;
 #endif
       } B;
    } CTU_COTR_16B_tag;
@@ -8104,71 +8104,71 @@ extern "C" {
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T7_SG:1;           /* Trigger 7 Software Generated */
 #else
-         uint16_t  T7SG:1;        
+         uint16_t  T7SG:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T6_SG:1;           /* Trigger 6 Software Generated */
 #else
-         uint16_t  T6SG:1;        
+         uint16_t  T6SG:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T5_SG:1;           /* Trigger 5 Software Generated */
 #else
-         uint16_t  T5SG:1;        
+         uint16_t  T5SG:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T4_SG:1;           /* Trigger 4 Software Generated */
 #else
-         uint16_t  T4SG:1;        
+         uint16_t  T4SG:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T3_SG:1;           /* Trigger 3 Software Generated */
 #else
-         uint16_t  T3SG:1;        
+         uint16_t  T3SG:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T2_SG:1;           /* Trigger 2 Software Generated */
 #else
-         uint16_t  T2SG:1;        
+         uint16_t  T2SG:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T1_SG:1;           /* Trigger 1 Software Generated */
 #else
-         uint16_t  T1SG:1;        
+         uint16_t  T1SG:1;
 #endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  T0_SG:1;           /* Trigger 0 Software Generated */
 #else
-         uint16_t  T0SG:1;        
-#endif       
+         uint16_t  T0SG:1;
+#endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  CTU_ADC_RESET:1;   /* CTU ADC State Machine Reset */
 #else
-         uint16_t  CTUADCRESET:1;        
-#endif 
+         uint16_t  CTUADCRESET:1;
+#endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  CTU_ODIS:1;        /* CTU Output Disable */
 #else
-         uint16_t  CTUODIS:1;        
-#endif         
+         uint16_t  CTUODIS:1;
+#endif
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  FILTER_EN:1;       /* Synchronize Filter Register value */
 #else
-         uint16_t  FILTERENABLE:1;        
+         uint16_t  FILTERENABLE:1;
 #endif
          uint16_t  CGRE:1;            /* Clear GRE */
          uint16_t  FGRE:1;            /* GRE Flag */
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  MRS_SG:1;          /* MRS Software Generated */
 #else
-         uint16_t  MRSSG:1;        
-#endif     
+         uint16_t  MRSSG:1;
+#endif
          uint16_t  GRE:1;             /* General Reload Enable */
 #ifndef USE_FIELD_ALIASES_CTU
          uint16_t  TGSISR_RE:1;       /* TGSISR Reload Enable */
 #else
-         uint16_t  TGSISRRE:1;        
-#endif        
+         uint16_t  TGSISRRE:1;
+#endif
       } B;
    } CTU_CTUCR_16B_tag;
 
@@ -9575,11 +9575,11 @@ extern "C" {
          mcPWM_CTRL1_16B_tag CTRL;        /* deprecated - please avoid */
       };
                                                      /* Value Register 0 */
-      
+
       union {
- 
+
 	     struct {
-			   
+
             mcPWM_VAL_0_16B_tag VAL_0;          /* relative offset: 0x0008 */
                                                      /* Value Register 1 */
             mcPWM_VAL_1_16B_tag VAL_1;          /* relative offset: 0x000A */
@@ -9590,10 +9590,10 @@ extern "C" {
                                                      /* Value Register 4 */
             mcPWM_VAL_4_16B_tag VAL_4;          /* relative offset: 0x0010 */
                                                      /* Value Register 5 */
-            mcPWM_VAL_5_16B_tag VAL_5;          /* relative offset: 0x0012 */	    
-				
+            mcPWM_VAL_5_16B_tag VAL_5;          /* relative offset: 0x0012 */
+
 		 };
-		 
+
 		 mcPWM_VAL_0_16B_tag VAL[6];    /* offset: 0x0008 size: 16 bit */
 
 	  };
@@ -9648,7 +9648,7 @@ extern "C" {
       union {
                                                  /*  Register set SUBMOD */
          mcPWM_SUBMOD_tag SUBMOD[4];       /* offset: 0x0000  (0x0050 x 4) */
-		 
+
 		 mcPWM_SUBMOD_tag SUB[4];       /* offset: 0x0000  (0x0050 x 4) */
 
          struct {
@@ -9671,7 +9671,7 @@ extern "C" {
                                                      /* Value Register 4 */
             mcPWM_VAL_4_16B_tag VAL_40;    /* offset: 0x0010 size: 16 bit */
                                                      /* Value Register 5 */
-            mcPWM_VAL_5_16B_tag VAL_50;    /* offset: 0x0012 size: 16 bit */		
+            mcPWM_VAL_5_16B_tag VAL_50;    /* offset: 0x0012 size: 16 bit */
             int8_t mcPWM_reserved_0014[4];
                                               /* Output Control Register */
             mcPWM_OCTRL_16B_tag OCTRL0;    /* offset: 0x0018 size: 16 bit */
@@ -13617,7 +13617,7 @@ extern "C" {
          uint32_t  ITR:1;             /* Interrupt Then Reset */
          uint32_t  HLK:1;             /* Hard Lock */
          uint32_t  SLK:1;             /* Soft Lock */
-         uint32_t:1;             
+         uint32_t:1;
          uint32_t  STP:1;             /* Stop Mode Control */
          uint32_t  FRZ:1;             /* Debug Mode Control */
          uint32_t  WEN:1;             /* Watchdog Enabled */
@@ -14452,7 +14452,7 @@ extern "C" {
          uint32_t BITER_E_LINK:1;        /* beginning ("major") iteration count */
 #else
          uint32_t BITERE_LINK:1;        /* deprecated name - please avoid */
-#endif         
+#endif
          uint32_t  BITER:15;          /* Enable Channel to Channel linking on minor loop complete */
          uint32_t  BWC:2;             /* Bandwidth Control */
          uint32_t  MAJOR_LINKCH:6;    /* Link Channel Number */
@@ -17428,15 +17428,15 @@ extern "C" {
          FLEXCAN_MSG_ID_32B_tag ID;       /* deprecated - please avoid */
       };
       union {	  /* Message Buffer Data Register */
-	     
+
 		 struct {
             FLEXCAN_MSG_DATA_32B_tag MSG_BYTE0_3;  /* relative offset: 0x0008 */
                                          /* Message Buffer Data Register */
             FLEXCAN_MSG_DATA_32B_tag MSG_BYTE4_7;  /* relative offset: 0x000C */
          };
-		 
+
 		 FLEXCAN_MSG_DATA2_32B_tag DATA;  /* relative offset: 0x000C */
-		 
+
       };
 
    } FLEXCAN_MB_tag;
@@ -18566,7 +18566,7 @@ extern "C" {
          uint16_t  SSI1IE:1;
          uint16_t  SSI0IE:1;
 #endif
-         
+
          uint16_t:2;
 #ifndef USE_FIELD_ALIASES_FR
          uint16_t  EVT_IE:1;          /* EVEN CYCLE TABLE WRITTEN INTERRUPT Enable */
@@ -18990,16 +18990,16 @@ extern "C" {
       uint16_t R;
       struct {
          uint16_t:2;
-#ifndef USE_FIELD_ALIASES_FR		 
+#ifndef USE_FIELD_ALIASES_FR
          uint16_t  T2_CFG:1;          /* Timer T2 Configuration */
 #else
          uint16_t  T2CFG:1;          /* Timer T2 Configuration */
-#endif		
-#ifndef USE_FIELD_ALIASES_FR	 
+#endif
+#ifndef USE_FIELD_ALIASES_FR
          uint16_t  T2_REP:1;          /* Timer T2 Repetitive Mode */
 #else
          uint16_t  T2REP:1;          /* Timer T2 Configuration */
-#endif	
+#endif
          uint16_t:1;
          uint16_t  T2SP:1;            /* Timer T2 Stop */
          uint16_t  T2TR:1;            /* Timer T2 Trigger */
@@ -19008,8 +19008,8 @@ extern "C" {
 #ifndef USE_FIELD_ALIASES_FR
          uint16_t  T1_REP:1;          /* Timer T1 Repetitive Mode */
 #else
-         uint16_t  T1REP:1;          
-#endif	
+         uint16_t  T1REP:1;
+#endif
          uint16_t:1;
          uint16_t  T1SP:1;            /* Timer T1 Stop */
          uint16_t  T1TR:1;            /* Timer T1 Trigger */
@@ -19024,14 +19024,14 @@ extern "C" {
 #ifndef USE_FIELD_ALIASES_FR
          uint16_t  T1_CYC_VAL:6;      /* Timer T1 Cycle Filter Value */
 #else
-         uint16_t  TI1CYCVAL:1;        /* Timer T1 Cycle Filter Value */       
-#endif	
+         uint16_t  TI1CYCVAL:1;        /* Timer T1 Cycle Filter Value */
+#endif
          uint16_t:2;
 #ifndef USE_FIELD_ALIASES_FR
          uint16_t  T1_CYC_MSK:6;      /* Timer T1 Cycle Filter Mask */
 #else
          uint16_t  TI1CYCMSK:1;      /* Timer T1 Cycle Filter Mask */
-#endif	
+#endif
       } B;
    } FR_TI1CYSR_16B_tag;
 
@@ -19110,7 +19110,7 @@ extern "C" {
       } B;
    } FR_SSR_16B_tag;
 
-   
+
 
    typedef union {   /* Slot Status Counter Register0 */
       uint16_t R;
@@ -20124,7 +20124,7 @@ extern "C" {
       union {
                                                      /*  Register set MB */
          FR_MB_tag MB[64];                 /* offset: 0x0100  (0x0008 x 64) */
-		 
+
 		 FR_MB_tag MBCCS[64];                 /* offset: 0x0100  (0x0008 x 64) */
 
          struct {

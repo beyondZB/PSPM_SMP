@@ -5,68 +5,106 @@
 
 #ifndef __PSPM_H__
 #define __PSPM_H__
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <rtems.h>
+#include <rtems/cpuuse.h>
+
 #include "rtems/score/threadimpl.h"
 #include "rtems/score/scheduleredfsmp.h"
 
 #include "tmacros.h"
 #include "test_support.h"
 
-#define QUANTUM_LENGTH 50 /* In number of ticks */
+/* In number of ticks */
+#define QUANTUM_LENGTH 50
+
 #define TASK_NUM_MAX 20
 
-/* functions */
-void pspm_smp_task_manager_initialize( int task_num, int quanta);
+/* The length of message data, in number of word */
+#define MESSAGE_DATA_LENGTH 2
+/*One message is allowed to be sent to at most TARGET_NUM_MAX tasks */
+#define TARGET_NUM_MAX 20
+
+/* The size of message buffer in each message queue */
+#define MESSAGE_BUFFER_LENGTH 10
+
+typedef struct _Message{
+  int32_t address[MESSAGE_DATA_LENGTH]; /*The start address of the Message*/
+  size_t size; /*The length of Message */
+  tid_t sender; /* the task id of Message sender */
+}pspm_smp_message;
+
+
+
+/* functions used in init.c */
+void pspm_smp_task_manager_initialize( uint32_t task_num, uint32_t quanta);
 
 rtems_task Init( rtems_task_argument argument);
 
 rtems_task _comp_servant_routine( rtems_task_argument argument );
 
+uint32_t GCD(uint32_t a, uint32_t b);
+
+uint32_t LCM(uint32_t a, uint32_t b);
+
 void Loop( void );
+
+void rtems_success( void );
 
 /*
  *  Handy macros and static inline functions
  */
+/* Type of Tasks in multicore PSPM
+ * Currently, only the periodic task can be created. 2018/4/10
+ * */
+typedef enum{
+    PERIOD_TASK    =1,
+    APERIODIC_TASK =2,
+    SPORADIC_TASK  =3
+}Task_type;
 
-/* end of include file */
+/* Type of Queue in multicore PSPM
+ * */
+typedef enum{
+    IN_QUEUE     =1,
+    COMP_QUEUE   =2,
+    OUT_QUEUE    =3
+}Queue_type;
 
-/* @brief I-Servant runnable
+typedef enum{
+    SATISFIED,
+    UNSATISFIED
+}pspm_status_code;
+
+typedef void* Task_Node_t;
+
+
+/* @brief Servant runnable
+ * I-Servant: Reading data from environment, and send them as message to the C-servant
+ * C-Servant: Reading data from msg, and updating the data in the msg then writing to same message
+ * O-Servant: Reading data from msg, and update the actuator
  * This runnable will be invoked when timer fires
- * @param[out] data_isc is the start address of sending message
- * @param[out] size_isc is the length of the message
+ * @param[in out] msg The input message and output message
  * */
-typedef void (*IServantRunnable)(
-  void *data_isc,
-  size_t *size_isc
-);
+typedef void (*ServantRunnable)(pspm_smp_message * msg);
 
-/* @brief C-Servant runnable
- * This runnable will be invoked when C-servant is scheduled
- * @param[in] source_id is the task id of message sender
- * @param[in] data_cri is the start address of received message
- * @param[in] size_cri is the length of received message
- * @param[out] target_id is the task id of message receiver
- * @param[out] data_cso is the start address of sent message
- * @param[out] size_cso is the length of sent message
+/* @brief Message send API
+ * send message address to the COMP_QUEUE of target task
+ * @param[in] id The id of message receiver task
+ * @param[out] msg The address of sent message
  * */
-typedef void (*CServantRunnable)(
-  tid_t source_id,  /* The message sender, there is only one sender*/
-  void *data_cri,
-  size_t size_cri,
-  tid_t *target_id,  /* The array of target tasks */
-  int32_t *target_num, /* There could multiple target */
-  void *data_cso,
-  size_t *size_cso
-);
+pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg);
 
-/* @brief O-Servant runnable
- * This runnable will be invoked when timer fires
- * @param[in] data_orc is the start address of received message
- * @param[in] size_orc is the length of received message
+/* @brief Message Receive API
+ * Receive message from the IN_QUEUE of current task
+ * @param[in out] msg The address of received message
  * */
-typedef void (*OServantRunnable)(
-  void *data_orc,
-  size_t size_orc
-);
+pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg);
+
 
 /* This function must be called in timeslice function to obtain the subsequent subtasks timing information */
 //tid_t _get_task_id(Thread_Control * executing)
@@ -82,22 +120,6 @@ typedef void (*OServantRunnable)(
 //  return node->task_node->id;
 //}
 
-/* Type of Tasks in multicore PSPM
- * Currently, only the periodic task can be created. 2018/4/10
- * */
-#define PERIOD_TASK    1001
-#define APERIODIC_TASK 1002
-#define SPORADIC_TASK  1003
-
-/* Type of Queue in multicore PSPM
- * */
-#define  IN_QUEUE     2001
-#define  COMP_QUEUE   2002
-#define  OUT_QUEUE    2003
-
-typedef uint32_t Queue_Type;
-
-typedef void* Task_Node_t;
 
 
 /* @brief Task Creation API
@@ -123,38 +145,16 @@ Task_Node_t pspm_smp_task_create(
  * */
 void pspm_smp_servant_create(
   Task_Node_t task,
-  IServantRunnable i_runnable,
-  CServantRunnable c_runnable,
-  OServantRunnable o_runnable
+  ServantRunnable i_runnable,
+  ServantRunnable c_runnable,
+  ServantRunnable o_runnable
 );
 
 /* PSPM SMP programs entry
  * */
 void main();
 
-/* configuration information */
 
-#define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
-#define CONFIGURE_APPLICATION_NEEDS_SIMPLE_CONSOLE_DRIVER
-#define CONFIGURE_MAXIMUM_TIMERS 10
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 10
-
-/* 1 ms == 1 tick*/
-#define CONFIGURE_MILLISECONDES_PER_TICK 1
-
-/* 1 timeslice == 50 ticks */
-#define CONFIGURE_TICKS_PER_TIMESLICE 50
-
-#define CONFIGURE_MAXIMUM_PROCESSORS   4
-
-#define CONFIGURE_MAXIMUM_TASKS     (1 + TASK_NUM_MAX)
-#define CONFIGURE_MAXIMUM_SEMAPHORES 1
-
-#define CONFIGURE_INITIAL_EXTENSIONS RTEMS_TEST_INITIAL_EXTENSION
-
-#define CONFIGURE_RTEMS_INIT_TASKS_TABLE
-
-#include <rtems/confdefs.h>
 
 #endif
 

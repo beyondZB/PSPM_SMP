@@ -13,56 +13,28 @@
 #define PERIOD_TASK_NUM 2
 
 /* @brief I-Servant runnable
- * Reading data from environment device(e.g. pin), and writing to the data_sic.
- * This runnable will be invoked when timer fires.
- * @param[out] data_isc is the start address of sending message
- * @param[out] size_isc is the length of the message
+ * Reading data from environment, and send them as message to the C-servant
+ * This runnable will be invoked when timer fires
+ * @param[in out] msg The input message and output message
  * */
-
-//typedef void (*IServantRunnable)(
-//  void *data_isc,
-//  size_t *size_isc
-//);
-//
-void i_servant_0(void * data_isc, size_t *size_isc);
-void i_servant_1(void * data_isc, size_t *size_isc);
+void i_servant_0(pspm_smp_message * msg);
+void i_servant_1(pspm_smp_message * msg);
 
 /* @brief C-Servant runnable
- * Reading data from data_cri, and writing to the data_cso.
- * This runnable will be invoked when C-servant is scheduled
- * @param[in] source_id is the task id of message sender
- * @param[in] data_cri is the start address of received message
- * @param[in] size_cri is the length of received message
- * @param[out] target_id is the task id of message receiver
- * @param[out] target_num is the number of message receiver
- * @param[out] data_cso is the start address of sent message
- * @param[out] size_cso is the length of sent message
+ * Reading data from msg, and updating the data in the msg then writing to same message
+ * This runnable will be invoked by smp scheduler Pfair
+ * @param[in out] msg The input message and output message
  * */
-
-//typedef void (*CServantRunnable)(
-//    tid_t source_id,  /* The message sender, there is only one sender*/
-//  void *data_cri,
-//  size_t size_cri,
-//  tid_t *target_id,  /* The array of target tasks */
-//  int32_t *target_num; /* There could multiple target */
-//  void *data_cso,
-//  size_t *size_cso
-//);
-void c_servant_0(tid_t source_id, void *data_cri, size_t size_cri, tid_t *target_id, int32_t *target_num, void *data_cso, size_t *size_cso);
-void c_servant_1(tid_t source_id, void *data_cri, size_t size_cri, tid_t *target_id, int32_t *target_num, void *data_cso, size_t *size_cso);
+void c_servant_0(pspm_smp_message * msg);
+void c_servant_1(pspm_smp_message * msg);
 
 /* @brief O-Servant runnable
- * Reading data from data_orc, and writing to the environment device.
+ * Reading data from msg, and update the actuator
  * This runnable will be invoked when timer fires
- * @param[in] data_orc is the start address of received message
- * @param[in] size_orc is the length of received message
+ * @param[in out] msg The input message and output message
  * */
-//typedef void (*OServantRunnable)(
-//  void *data_orc,
-//  size_t size_orc
-//);
-void o_servant_0(void *data_orc, size_t size_orc);
-void o_servant_1(void *data_orc, size_t size_orc);
+void o_servant_0(pspm_smp_message * msg);
+void o_servant_1(pspm_smp_message * msg);
 
 
 #endif

@@ -129,13 +129,13 @@ void _Rate_monotonic_Restart(
    */
   _TOD_Get_uptime( &the_period->time_period_initiated );
   _Thread_Get_CPU_time_used( owner, &the_period->cpu_usage_period_initiated );
-
   _Rate_monotonic_Release_job(
     the_period,
     owner,
     the_period->next_length,
     lock_context
   );
+
 }
 
 static void _Rate_monotonic_Update_statistics(
