@@ -55,7 +55,7 @@ void c_servant_0( pspm_smp_message * msg )
 
   /* Send the updated message to the COMP_QUEUE of task 1 */
   status = pspm_smp_message_queue_send(1, msg);
-  if(status == SATISFIED){
+  if(SATISFIED == status){
       printf("Task 1 message send successfully\n");
   }else{
       printf("Task 1 message send failed\n");
@@ -70,7 +70,7 @@ void c_servant_1( pspm_smp_message * msg )
   int i;
   uint32_t   *data_array;
   pspm_smp_message message;
-  pspm_status_code sc;
+  pspm_status_code status;
   data_array = (uint32_t *)msg->address;
 
   /* Initialize a local message, whose data can be used global */
@@ -84,8 +84,8 @@ void c_servant_1( pspm_smp_message * msg )
 
   /* Obtaining message from COMP_QUEUE */
   while(1){
-      sc = pspm_smp_message_queue_receive(&message);
-      if(sc == UNSATISFIED){
+      status = pspm_smp_message_queue_receive(&message);
+      if(UNSATISFIED == status){
           printf("No message sent from other tasks\n");
           break;
       }

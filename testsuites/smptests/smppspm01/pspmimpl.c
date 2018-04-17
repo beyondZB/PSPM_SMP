@@ -126,7 +126,7 @@ rtems_id _get_message_queue(tid_t id, Queue_type type)
 {
   rtems_id qid;
   /* No such a task exists */
-  if( pspm_smp_task_manager.Task_Node_array[id] == NULL )
+  if( NULL == pspm_smp_task_manager.Task_Node_array[id])
     return -1;
 
   switch(type){
@@ -179,7 +179,7 @@ void * _get_runnable(tid_t id, Queue_type type)
 {
   void * runnable;
   /* No such a task exists */
-  if( pspm_smp_task_manager.Task_Node_array[id] == NULL ){
+  if( NULL == pspm_smp_task_manager.Task_Node_array[id]){
     printf("Error: task %d is not created\n", id);
     return NULL;
   }
@@ -220,7 +220,7 @@ void _in_servant_routine(rtems_id null_id, void * task_node)
   /* Set the subsequent timer */
   rtems_timer_reset(timer_id);
 
-  if((runnable = (ServantRunnable)(node->i_servant.runnable)) == NULL){
+  if( NULL == (runnable = (ServantRunnable)(node->i_servant.runnable)) ){
     printf("Error: No such a task (tid = %d) when creating a I-Servant\n", node->id);
   } else {
     message.address = node->in_message;
@@ -250,14 +250,14 @@ void _out_servant_routine( rtems_id null_id, void * task_node)
   /* Set the subsequent timer */
   rtems_timer_reset(timer_id);
 
-  if((runnable = (ServantRunnable)node->o_servant.runnable) == NULL){
+  if( NULL == (runnable = (ServantRunnable)node->o_servant.runnable)){
     printf("Error: No such a task (tid = %d) when creating a O-Servant\n", node->id);
   } else {
     message.address = node->out_message;
     message.size = 0;
     /* Receive message from OUT_QUEUE. There may be multiple messages */
     status = _pspm_smp_message_queue_OrC( node->id, &message);
-    if(status == RTEMS_UNSATISFIED){
+    if(RTEMS_UNSATISFIED == status){
         printf("The OUT_QUEUE is empty\n");
     }else{
         runnable( &message);
@@ -290,7 +290,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
 
   ServantRunnable runnable;
   /* If runnable == NULL, no such a task exists */
-  if((runnable = (ServantRunnable)_get_runnable(id, COMP_QUEUE)) == NULL){
+  if( NULL == (runnable = (ServantRunnable)_get_runnable(id, COMP_QUEUE))){
     printf("Error: No such a task (tid = %d) when creating a C-Servant\n", id);
     return;
   }
@@ -356,7 +356,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
       directive_failed(status, "rtems_rate_monotonic_period");
 
       status = _pspm_smp_message_queue_CrI(id, &msg);
-      if(status == RTEMS_UNSATISFIED){
+      if(RTEMS_UNSATISFIED == status){
           continue;
       }
       printf("c servant has message\n");
@@ -387,11 +387,11 @@ static void _group_deadline_update(
     return;
   }else{
     p_snode->g = *p_min_group_deadline;
-    if(p_snode->b == 0 && p_snode->d < *p_min_group_deadline){
+    if(0 == p_snode->b && p_snode->d < *p_min_group_deadline){
       *p_min_group_deadline = p_snode->d;
       p_snode->g = p_snode->d;
     }
-    if(p_snode->d - p_snode->r == 3 && p_snode->d - 1 < *p_min_group_deadline)
+    if(3 == (p_snode->d - p_snode->r) && (p_snode->d - 1) < *p_min_group_deadline)
       *p_min_group_deadline = p_snode->d - 1;
   }
 }
@@ -529,21 +529,21 @@ void _message_queue_create(Task_Node * task)
 
   name = rtems_build_name('Q','U','I',task->id + '0');
   status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, sizeof(pspm_smp_message), RTEMS_DEFAULT_ATTRIBUTES, &qid );
-  if(status == RTEMS_SUCCESSFUL){
+  if(RTEMS_SUCCESSFUL == status){
     task->i_queue_id = qid;
   }
   directive_failed(status, "message queue in queue create");
 
   name = rtems_build_name('Q','U','C',task->id + '0');
   status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, sizeof(pspm_smp_message), RTEMS_DEFAULT_ATTRIBUTES, &qid );
-  if(status == RTEMS_SUCCESSFUL){
+  if(RTEMS_SUCCESSFUL == status){
     task->o_queue_id = qid;
   }
   directive_failed(status, "message queue comp queue create");
 
   name = rtems_build_name('Q','U','O',task->id + '0');
   status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, sizeof(pspm_smp_message), RTEMS_DEFAULT_ATTRIBUTES, &qid );
-  if(status == RTEMS_SUCCESSFUL){
+  if(RTEMS_SUCCESSFUL == status){
     task->c_queue_id = qid;
   }
   directive_failed(status, "message queue out queue create");
@@ -554,9 +554,9 @@ void _message_queue_create(Task_Node * task)
 
 pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg)
 {
-    rtems_status_code  sc;
-    sc = _pspm_smp_message_queue_CsC(id, msg);
-    if(sc == RTEMS_UNSATISFIED){
+    rtems_status_code  status;
+    status = _pspm_smp_message_queue_CsC(id, msg);
+    if(RTEMS_UNSATISFIED == status){
         printf("Error: Queue in target task is full\n");
         return UNSATISFIED;
     }
@@ -565,7 +565,7 @@ pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg)
 
 pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg)
 {
-  rtems_status_code sc;
+  rtems_status_code status;
     /* Since this function don't know current task, we have to obtain it */
   Thread_Control * executing;
   Scheduler_Node * base_node;
@@ -578,8 +578,8 @@ pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg)
   base_node = _Thread_Scheduler_get_home_node( executing );
   node = _scheduler_edf_smp_node_downcast( base_node );
 
-  sc = _pspm_smp_message_queue_CrC(node->task_node->id, msg);
-  if(sc == RTEMS_UNSATISFIED){
+  status = _pspm_smp_message_queue_CrC(node->task_node->id, msg);
+  if(RTEMS_UNSATISFIED == status){
       return UNSATISFIED;
   }
   return SATISFIED;
@@ -588,8 +588,8 @@ pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg)
 
 rtems_status_code _message_queue_send_message(rtems_id qid, pspm_smp_message * msg)
 {
-  return rtems_message_queue_send(qid, msg, sizeof(pspm_smp_message));
-  //return rtems_message_queue_send(qid, (const void *) msg, sizeof(pspm_smp_message));
+  //return rtems_message_queue_send(qid, msg, sizeof(pspm_smp_message));
+  return rtems_message_queue_send(qid, (const void *) msg, sizeof(pspm_smp_message));
 }
 
 
@@ -604,7 +604,7 @@ rtems_status_code _message_queue_receive_message(rtems_id qid, pspm_smp_message 
   int size;
 
   status  = rtems_message_queue_receive(qid, &message, &size, RTEMS_NO_WAIT, RTEMS_NO_TIMEOUT);
-  if(status == RTEMS_UNSATISFIED){
+  if(RTEMS_UNSATISFIED == status){
     return status;
   }
   directive_failed(status, "rtems message queue receive");
@@ -631,7 +631,7 @@ rtems_status_code _pspm_smp_message_queue_CsC( tid_t id, pspm_smp_message *msg)
 
     msg->sender = id;
     status = _message_queue_send_message(comp_qid, msg);
-    if(status = RTEMS_UNSATISFIED){
+    if(RTEMS_UNSATISFIED == status){
         return status;
     }
     directive_failed(status, "message queue send CsC");
@@ -651,7 +651,7 @@ rtems_status_code _pspm_smp_message_queue_CrC( tid_t id, pspm_smp_message *msg)
   comp_qid = _get_message_queue(id, COMP_QUEUE);
   if( comp_qid != -1 ){
     status = _message_queue_receive_message(comp_qid, msg);
-    if(status = RTEMS_UNSATISFIED){
+    if(RTEMS_UNSATISFIED == status){
         return status;
     }
     directive_failed(status, "message queue receive CrC");
@@ -674,7 +674,7 @@ rtems_status_code _pspm_smp_message_queue_CrI(tid_t id, pspm_smp_message *msg)
   in_qid = _get_message_queue(id, IN_QUEUE);
   if( in_qid != -1 ){
     status = _message_queue_receive_message(in_qid, msg);
-    if(status == RTEMS_UNSATISFIED){
+    if(RTEMS_UNSATISFIED == status){
         return status;
     }
     directive_failed(status, "message queue receive CrI");
@@ -747,7 +747,7 @@ rtems_status_code _pspm_smp_message_queue_OrC( tid_t id, pspm_smp_message *msg)
   in_qid = _get_message_queue(id, OUT_QUEUE);
   if( in_qid != -1 ){
     status = _message_queue_receive_message(in_qid, msg);
-    if(status = RTEMS_UNSATISFIED){
+    if(status == RTEMS_UNSATISFIED){
         return status;
     }
     directive_failed(status, "Out_servant message queue receive");

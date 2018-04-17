@@ -142,11 +142,11 @@ rtems_task Init(
    * Otherwise, the Allocator Error occurs leading to no statistic results of CPU usage.
    * */
   status = rtems_task_wake_after(10 * lcm + 5);
-  rtems_test_assert(status == RTEMS_SUCCESSFUL);
+  rtems_test_assert(RTEMS_SUCCESSFUL == status);
 
   for( ; count > 0; count--){
       status = rtems_task_suspend(id[count - 1]);
-      rtems_test_assert(status == RTEMS_SUCCESSFUL);
+      rtems_test_assert(RTEMS_SUCCESSFUL == status);
   }
 
   rtems_cpu_usage_report_with_plugin(&rtems_test_printer);
