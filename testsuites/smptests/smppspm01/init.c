@@ -79,7 +79,6 @@ rtems_task Init(
   Task_Node           *task_node;
 
 
-
   cpu_self = rtems_get_current_processor();
   cpu_num  = rtems_get_processor_count();
 
@@ -142,7 +141,7 @@ rtems_task Init(
   /* The time here are !!!not!!! supposed to be set to the LCM of task periods.
    * Otherwise, the Allocator Error occurs leading to no statistic results of CPU usage.
    * */
-  status = rtems_task_wake_after(2 * lcm + 5);
+  status = rtems_task_wake_after(10 * lcm + 5);
   rtems_test_assert(status == RTEMS_SUCCESSFUL);
 
   for( ; count > 0; count--){

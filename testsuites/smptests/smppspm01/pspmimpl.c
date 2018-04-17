@@ -216,15 +216,18 @@ void _in_servant_routine(rtems_id null_id, void * task_node)
   ServantRunnable runnable;
 
   /* Obtaining servant timer id */
-  timer_id = node->o_servant.id;
+  timer_id = node->i_servant.id;
   /* Set the subsequent timer */
   rtems_timer_reset(timer_id);
 
   if((runnable = (ServantRunnable)(node->i_servant.runnable)) == NULL){
     printf("Error: No such a task (tid = %d) when creating a I-Servant\n", node->id);
   } else {
+    message.address = node->in_message;
+    message.size = 0;
     runnable( &message);
-
+    /* although each message send api will set the message sender, we set the sender in case of forgotten */
+    message.sender = node->id;
     _pspm_smp_message_queue_IsC( node->id, &message);
   }
 }
@@ -250,9 +253,13 @@ void _out_servant_routine( rtems_id null_id, void * task_node)
   if((runnable = (ServantRunnable)node->o_servant.runnable) == NULL){
     printf("Error: No such a task (tid = %d) when creating a O-Servant\n", node->id);
   } else {
+    message.address = node->out_message;
+    message.size = 0;
     /* Receive message from OUT_QUEUE. There may be multiple messages */
-    status =_pspm_smp_message_queue_OrC( node->id, &message);
-    if(status != RTEMS_UNSATISFIED){
+    status = _pspm_smp_message_queue_OrC( node->id, &message);
+    if(status == RTEMS_UNSATISFIED){
+        printf("The OUT_QUEUE is empty\n");
+    }else{
         runnable( &message);
     }
   }
@@ -288,6 +295,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
     return;
   }
 
+  pspm_smp_message_initialize(&msg);
   /******************************************************/
   /*         Initialize the task node structure         */
   /******************************************************/
@@ -347,13 +355,13 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
       status = rtems_rate_monotonic_period(rate_monotonic_id, period);
       directive_failed(status, "rtems_rate_monotonic_period");
 
-      //status = _pspm_smp_message_queue_CrI(id, &msg);
-      //directive_failed(status, "comp servant message receive");
-      //if(status != RTEMS_UNSATISFIED){
-      //    printf("c servant has message\n");
-      //    runnable(&msg);
-      //    _pspm_smp_message_queue_CsO(id, &msg);
-      //}
+      status = _pspm_smp_message_queue_CrI(id, &msg);
+      if(status == RTEMS_UNSATISFIED){
+          continue;
+      }
+      printf("c servant has message\n");
+      runnable(&msg);
+      _pspm_smp_message_queue_CsO(id, &msg);
     }
 }/* End Out_servant */
 
@@ -433,6 +441,8 @@ Task_Node_t  pspm_smp_task_create(
     p_tnode->type = task_type;
     p_tnode->wcet = RTEMS_MILLISECONDS_TO_TICKS(wcet);
     p_tnode->period = RTEMS_MILLISECONDS_TO_TICKS(period);
+    p_tnode->in_message = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
+    p_tnode->out_message = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
 
     /*Note that : the quantum length is presented in number of ticks */
     p_tnode->quant_wcet =  myceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
@@ -471,7 +481,6 @@ void pspm_smp_servant_create(
     ServantRunnable o_runnable
 )
 {
-    printf("create i_runnable = %x\n", i_runnable);
   /* Set the Servant runnable of a Periodic task */
   ((Task_Node *)task)->i_servant.runnable = i_runnable;
   ((Task_Node *)task)->c_servant.runnable = c_runnable;
@@ -487,6 +496,15 @@ void pspm_smp_servant_create(
 /***********************************************************/
 /*        Message Passing Interfaces Implementation        */
 /************************************************************/
+/* @brief C-Servant message initialization API
+ * Note: this function can only be used in C-Servant runnable
+ * */
+void pspm_smp_message_initialize(pspm_smp_message *msg)
+{
+    msg->address = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
+    msg->size = 0;
+}
+
 static void * _pspm_smp_memcpy(void *dst, const void *src, unsigned int n)
 {
     unsigned char *d = dst;
@@ -510,36 +528,28 @@ void _message_queue_create(Task_Node * task)
   /* rtems_status_code rtems_message_queue_create(rtems_name name, uint32_t count, size_t max_message_size, rtems_attribute attribute_set, rtems_id *id); */
 
   name = rtems_build_name('Q','U','I',task->id + '0');
-  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, sizeof(pspm_smp_message), RTEMS_DEFAULT_ATTRIBUTES, &qid );
   if(status == RTEMS_SUCCESSFUL){
     task->i_queue_id = qid;
-  }else{
-    directive_failed(status, "message queue in queue create");
   }
+  directive_failed(status, "message queue in queue create");
 
   name = rtems_build_name('Q','U','C',task->id + '0');
-  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, sizeof(pspm_smp_message), RTEMS_DEFAULT_ATTRIBUTES, &qid );
   if(status == RTEMS_SUCCESSFUL){
     task->o_queue_id = qid;
-  }else{
-    directive_failed(status, "message queue comp queue create");
   }
+  directive_failed(status, "message queue comp queue create");
 
   name = rtems_build_name('Q','U','O',task->id + '0');
-  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, MESSAGE_DATA_LENGTH, RTEMS_DEFAULT_ATTRIBUTES, &qid );
+  status = rtems_message_queue_create(name, MESSAGE_BUFFER_LENGTH, sizeof(pspm_smp_message), RTEMS_DEFAULT_ATTRIBUTES, &qid );
   if(status == RTEMS_SUCCESSFUL){
     task->c_queue_id = qid;
-  }else{
-    directive_failed(status, "message queue out queue create");
   }
+  directive_failed(status, "message queue out queue create");
+
 }
 
-void pspm_smp_message_initialize(pspm_smp_message *msg)
-{
-  msg->address = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
-  msg->size = 0;
-  msg->sender = 0;
-}
 
 
 pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg)
@@ -579,6 +589,7 @@ pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg)
 rtems_status_code _message_queue_send_message(rtems_id qid, pspm_smp_message * msg)
 {
   return rtems_message_queue_send(qid, msg, sizeof(pspm_smp_message));
+  //return rtems_message_queue_send(qid, (const void *) msg, sizeof(pspm_smp_message));
 }
 
 
@@ -588,18 +599,19 @@ rtems_status_code _message_queue_receive_message(rtems_id qid, pspm_smp_message 
    * Since I-Servant has higher prior execution than C-Servants,
    * the In_message_queue of current task has at least one message.
    * */
-  pspm_smp_message *message;
+  pspm_smp_message message;
   rtems_status_code status;
-  void * out;
-  size_t * size_out;
-  int i;
+  int size;
 
-  status  = rtems_message_queue_receive(qid, out, size_out, RTEMS_NO_WAIT, RTEMS_NO_TIMEOUT);
+  status  = rtems_message_queue_receive(qid, &message, &size, RTEMS_NO_WAIT, RTEMS_NO_TIMEOUT);
+  if(status == RTEMS_UNSATISFIED){
+    return status;
+  }
+  directive_failed(status, "rtems message queue receive");
 
-  message = (pspm_smp_message *)out;
-  msg->size = message->size;
-  msg->sender = message->sender;
-  _pspm_smp_memcpy(msg->address, message->address, message->size);
+  msg->size = message.size;
+  msg->sender = message.sender;
+  _pspm_smp_memcpy(msg->address, message.address, message.size);
 
   return status;
 }
@@ -687,7 +699,7 @@ void _pspm_smp_message_queue_CsO(tid_t id, pspm_smp_message *msg)
   if( out_qid != -1 ){
 
     if( msg->size > MESSAGE_DATA_LENGTH ){
-      printf("Warning: Message size is greater than defined, please confirm!");
+      printf("Warning: Message size in CsO the MESSAGE_DATA_LENGTH!");
       msg->size = MESSAGE_DATA_LENGTH;
     }
     msg->sender = id;
@@ -757,6 +769,7 @@ rtems_status_code _pspm_smp_message_queue_OrC( tid_t id, pspm_smp_message *msg)
 /* configuration information */
 
   /* Output data address and size */
+
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_SIMPLE_CONSOLE_DRIVER
 #define CONFIGURE_MAXIMUM_PERIODS 10

@@ -63,6 +63,8 @@ typedef struct _Task_Node{
   Servant  i_servant;
   Servant  c_servant;
   Servant  o_servant;
+  void * in_message;   /* message for IsC */
+  void * out_message;  /* message for OrC */
   uint32_t i_queue_id; /* id of queue for passing message between I and C servant in the same task */
   uint32_t c_queue_id; /* id of queue for communicating with other tasks, used by C-servant */
   uint32_t o_queue_id; /* id of queue for passing message between C and O servant in the same task */

@@ -17,7 +17,7 @@ void main()
 
   /* The creation of periodic tasks */
   /* The task start from 0, since every task will be mapped into a element in a array for convenient search */
-  task_nodes[0] = pspm_smp_task_create(0, PERIOD_TASK, 5, 500);
+  task_nodes[0] = pspm_smp_task_create(0, PERIOD_TASK, 5, 200);
   task_nodes[1] = pspm_smp_task_create(1, PERIOD_TASK, 6, 100);
 
   /* The creation of Servant in specific tasks */

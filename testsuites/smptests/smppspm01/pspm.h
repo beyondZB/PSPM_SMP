@@ -25,12 +25,12 @@
 #define TASK_NUM_MAX 20
 
 /* The length of message data, in number of word */
-#define MESSAGE_DATA_LENGTH 2
+#define MESSAGE_DATA_LENGTH sizeof(pspm_smp_message)
 /*One message is allowed to be sent to at most TARGET_NUM_MAX tasks */
 #define TARGET_NUM_MAX 20
 
 /* The size of message buffer in each message queue */
-#define MESSAGE_BUFFER_LENGTH 10
+#define MESSAGE_BUFFER_LENGTH 20
 
 typedef struct _Message{
   void *address; /*The start address of the Message*/

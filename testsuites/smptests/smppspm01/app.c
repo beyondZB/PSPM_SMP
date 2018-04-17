@@ -14,10 +14,9 @@ void i_servant_0(pspm_smp_message *msg)
 
   data_array[0] = 10;
   data_array[1] = 20;
+  printf("Task 0 Input:\n");
   msg->size = 2;
   /* the message sender will be setted automatically by the runtime */
-
-  printf("Task 0 Input:\n");
   for( i = 0; i < msg->size; ++i){
     printf("No.%d: %u\n", i+1, data_array[i]);
   }
@@ -32,9 +31,8 @@ void i_servant_1(pspm_smp_message *msg)
 
   data_array[0] = 100;
   msg->size = 1;
-  /* the message sender will be setted automatically by the runtime */
-
   printf("Task 1 Input:\n");
+  /* the message sender will be setted automatically by the runtime */
   for( i = 0; i < msg->size; ++i){
     printf("No.%d: %u\n", i+1, data_array[i]);
   }
@@ -44,6 +42,7 @@ void c_servant_0( pspm_smp_message * msg )
 {
   int i;
   uint32_t   *data_array;
+  pspm_status_code status;
 
   data_array = (uint32_t *)msg->address;
 
@@ -55,7 +54,13 @@ void c_servant_0( pspm_smp_message * msg )
   }
 
   /* Send the updated message to the COMP_QUEUE of task 1 */
-  pspm_smp_message_queue_send(1, msg);
+  status = pspm_smp_message_queue_send(1, msg);
+  if(status == SATISFIED){
+      printf("Task 1 message send successfully\n");
+  }else{
+      printf("Task 1 message send failed\n");
+  }
+
 
 
 }
@@ -71,15 +76,17 @@ void c_servant_1( pspm_smp_message * msg )
   /* Initialize a local message, whose data can be used global */
   pspm_smp_message_initialize(&message);
 
-  printf("Now is in c_servant_0\n");
+  printf("Now is in c_servant_1\n");
   /* Obtaining message from IN_QUEUE and multiple 100 */
   for(i = 0; i < msg->size; ++i){
     data_array[i] *= 100;
   }
 
   /* Obtaining message from COMP_QUEUE */
-  while(sc = pspm_smp_message_queue_receive(&message)){
+  while(1){
+      sc = pspm_smp_message_queue_receive(&message);
       if(sc == UNSATISFIED){
+          printf("No message sent from other tasks\n");
           break;
       }
       uint32_t * data_receive;
