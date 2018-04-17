@@ -565,7 +565,7 @@ rtems_status_code _message_queue_receive_message(rtems_id qid, pspm_smp_message 
    * Since I-Servant has higher prior execution than C-Servants,
    * the In_message_queue of current task has at least one message.
    * */
-  pspm_smp_message *message;
+  pspm_smp_message message;
   rtems_status_code status;
   void * out;
   size_t * size_out;
@@ -573,8 +573,11 @@ rtems_status_code _message_queue_receive_message(rtems_id qid, pspm_smp_message 
 
   status  = rtems_message_queue_receive(qid, out, size_out, RTEMS_NO_WAIT, RTEMS_NO_TIMEOUT);
   message = RTEMS_CONTAINER_OF(out, pspm_smp_message, address);
-  msg = message;
-
+  msg->size = *size_out;
+  msg->sender = message->sender;
+  for(i = 0 ; i < *size_out; ++i){
+    msg->address[i] = message->address[i];
+  }
   return status;
 }
 
