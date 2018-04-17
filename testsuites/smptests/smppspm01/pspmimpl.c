@@ -89,6 +89,10 @@ rtems_status_code _message_queue_send_message(rtems_id qid, pspm_smp_message * m
  * */
 rtems_status_code _message_queue_receive_message(rtems_id qid, pspm_smp_message *msg);
 
+/* @brief Obtaining the task id of current executing task
+ * @param[out] return the task id of executing.
+ * */
+tid_t _get_current_task_id();
 
 /* @brief Obtaining the runnable of Servant by task id and Queue type
  * if return -1, no such a task is found.
@@ -117,6 +121,33 @@ void _out_servant_routine( rtems_id null_id, void * task_node);
 /*        Inner Function Implementation                    */
 /***********************************************************/
 
+/* @brief Obtaining scheduler node from the base node in RTEMS
+ * This function is first introduced in file "Scheduleredfsmp.c"
+ * */
+static inline Scheduler_EDF_SMP_Node * _scheduler_edf_smp_node_downcast( Scheduler_Node *node  )
+{
+  return (Scheduler_EDF_SMP_Node *) node;
+}
+
+/* @brief Obtaining the task id of current executing task
+ * @param[out] return the task id of executing.
+ * */
+tid_t _get_current_task_id()
+{
+    /* Since this function don't know current task, we have to obtain it */
+  Thread_Control * executing;
+  Scheduler_Node * base_node;
+  Scheduler_EDF_SMP_Node * node;
+
+  /* Connect pspm smp task with rtems task */
+  /* rtems/score/Percpu.h _Per_CPU_Get_executing(_Per_CPU_Get())*/
+  executing = _Thread_Executing;
+  /* rtems/score/Threadimpl.h */
+  base_node = _Thread_Scheduler_get_home_node( executing );
+  node = _scheduler_edf_smp_node_downcast( base_node );
+
+  return node->task_node->id;
+}
 
 
 /* Obtaining the id of message queue through task id and Queue type
@@ -145,13 +176,7 @@ rtems_id _get_message_queue(tid_t id, Queue_type type)
   return qid;
 }
 
-/* @brief Obtaining scheduler node from the base node in RTEMS
- * This function is first introduced in file "Scheduleredfsmp.c"
- * */
-static inline Scheduler_EDF_SMP_Node * _scheduler_edf_smp_node_downcast( Scheduler_Node *node  )
-{
-  return (Scheduler_EDF_SMP_Node *) node;
-}
+
 
 /* Math function ceil and floor implementation */
 static double myfloor(double num)
@@ -226,7 +251,6 @@ void _in_servant_routine(rtems_id null_id, void * task_node)
     message.address = node->in_message;
     message.size = 0;
     runnable( &message);
-    /* although each message send api will set the message sender, we set the sender in case of forgotten */
     message.sender = node->id;
     _pspm_smp_message_queue_IsC( node->id, &message);
   }
@@ -327,17 +351,17 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
   status = rtems_object_get_classic_name(rtems_task_self(), &name);
   directive_failed(status, "rtems_get_name");
 
-  /* Creating timer for I-Servant and set the timer id of its Servant structure */
-  status = rtems_timer_create( name, &in_timer_id );
-  directive_failed(status, "rtems_timer_create");
-  pspm_smp_task_manager.Task_Node_array[id]->i_servant.id = in_timer_id;
-  rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
-
   /* Creating timer for O-Servant and set the timer id of its Servant structure */
   status = rtems_timer_create( name, &out_timer_id );
   directive_failed(status, "rtems_timer_create");
   pspm_smp_task_manager.Task_Node_array[id]->o_servant.id = out_timer_id;
   rtems_timer_fire_after(out_timer_id, period, _out_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
+
+  /* Creating timer for I-Servant and set the timer id of its Servant structure */
+  status = rtems_timer_create( name, &in_timer_id );
+  directive_failed(status, "rtems_timer_create");
+  pspm_smp_task_manager.Task_Node_array[id]->i_servant.id = in_timer_id;
+  rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
 
   /******************************************************/
   /*        The creation of C-Servant                   */
@@ -361,6 +385,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
       }
       printf("c servant has message\n");
       runnable(&msg);
+      msg.sender = id;
       _pspm_smp_message_queue_CsO(id, &msg);
     }
 }/* End Out_servant */
@@ -554,31 +579,21 @@ void _message_queue_create(Task_Node * task)
 
 pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg)
 {
-    rtems_status_code  status;
-    status = _pspm_smp_message_queue_CsC(id, msg);
-    if(RTEMS_UNSATISFIED == status){
-        printf("Error: Queue in target task is full\n");
-        return UNSATISFIED;
-    }
-    return SATISFIED;
+  rtems_status_code status;
+
+  msg->sender = _get_current_task_id();
+  status = _pspm_smp_message_queue_CsC(id, msg);
+  if(RTEMS_UNSATISFIED == status){
+      printf("Error: Queue in target task is full\n");
+      return UNSATISFIED;
+  }
+  return SATISFIED;
 }
 
 pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg)
 {
   rtems_status_code status;
-    /* Since this function don't know current task, we have to obtain it */
-  Thread_Control * executing;
-  Scheduler_Node * base_node;
-  Scheduler_EDF_SMP_Node * node;
-
-  /* Connect pspm smp task with rtems task */
-  /* rtems/score/Percpu.h _Per_CPU_Get_executing(_Per_CPU_Get())*/
-  executing = _Thread_Executing;
-  /* rtems/score/Threadimpl.h */
-  base_node = _Thread_Scheduler_get_home_node( executing );
-  node = _scheduler_edf_smp_node_downcast( base_node );
-
-  status = _pspm_smp_message_queue_CrC(node->task_node->id, msg);
+  status = _pspm_smp_message_queue_CrC(_get_current_task_id(), msg);
   if(RTEMS_UNSATISFIED == status){
       return UNSATISFIED;
   }
@@ -588,7 +603,6 @@ pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg)
 
 rtems_status_code _message_queue_send_message(rtems_id qid, pspm_smp_message * msg)
 {
-  //return rtems_message_queue_send(qid, msg, sizeof(pspm_smp_message));
   return rtems_message_queue_send(qid, (const void *) msg, sizeof(pspm_smp_message));
 }
 
@@ -611,7 +625,11 @@ rtems_status_code _message_queue_receive_message(rtems_id qid, pspm_smp_message 
 
   msg->size = message.size;
   msg->sender = message.sender;
-  _pspm_smp_memcpy(msg->address, message.address, message.size);
+
+  /* A simple memcpy function implemented here, there may be some bugs like overflow.
+   * So being careful to use this function.
+   * */
+  _pspm_smp_memcpy(msg->address, message.address, message.size*sizeof(uint32_t));
 
   return status;
 }
@@ -629,7 +647,6 @@ rtems_status_code _pspm_smp_message_queue_CsC( tid_t id, pspm_smp_message *msg)
       msg->size = MESSAGE_DATA_LENGTH;
     }
 
-    msg->sender = id;
     status = _message_queue_send_message(comp_qid, msg);
     if(RTEMS_UNSATISFIED == status){
         return status;
@@ -702,7 +719,6 @@ void _pspm_smp_message_queue_CsO(tid_t id, pspm_smp_message *msg)
       printf("Warning: Message size in CsO the MESSAGE_DATA_LENGTH!");
       msg->size = MESSAGE_DATA_LENGTH;
     }
-    msg->sender = id;
     status = _message_queue_send_message(out_qid, msg);
     directive_failed(status, "message queue send CsO");
 
@@ -727,7 +743,6 @@ void _pspm_smp_message_queue_IsC( tid_t id, pspm_smp_message * msg)
       msg->size = MESSAGE_DATA_LENGTH;
     }
     /* Send message to the IN_QUEUE */
-    msg->sender = id;
     status = _message_queue_send_message(in_qid, msg);
     directive_failed(status, "message queue send IsC");
 
