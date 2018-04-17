@@ -28,7 +28,6 @@ extern "C" {
 /* Type of task id */
 typedef int32_t tid_t;
 /* Type of task defined in pspm.h */
-typedef int32_t Task_Type;
 
 /* Type of subtasks
  * This structure must be one of the structure in SMP_EDF scheduler
@@ -55,7 +54,7 @@ typedef struct _Servent{
 typedef struct _Task_Node{
   Chain_Node Chain;     /* chain for tasks */
   tid_t id;             /* the global unique task id */
-  Task_Type type;
+  uint32_t type;       /* Task_type define in pspm.h */
   uint32_t period;      /* period of task presented by number of ms */
   uint32_t wcet;        /* wcet of task presented by number of ms */
   uint32_t quant_period;/* period of task presented by number of quantum */

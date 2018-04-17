@@ -14,8 +14,6 @@
 #define CONFIGURE_INIT
 #include "pspm.h"
 
-/* PSPM  relative contents */
-extern PSPM_SMP pspm_smp_task_manager;
 
 #include <inttypes.h>
 
@@ -57,7 +55,7 @@ void pspm_smp_task_manager_initialize( uint32_t task_num, uint32_t quanta)
     pspm_smp_task_manager.Task_Node_array[index] = NULL;
   }
   /* Initialize the array length and quantum length */
-  pspm_smp_task_manager.array_length = task_num;
+  pspm_smp_task_manager.array_length = 0;
   pspm_smp_task_manager.quantum_length = quanta; /* in number of ticks */
 }
 

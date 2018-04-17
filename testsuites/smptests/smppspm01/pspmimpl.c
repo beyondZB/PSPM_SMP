@@ -104,13 +104,13 @@ rtems_id _get_message_queue(tid_t id, Queue_type type);
  * This function act as a parameter of function rtems_timer_fire_after()
  * @param[in] id is the I-servant belonging task id
  * */
-void _in_servant_routine( rtems_id null_id, void * task_id );
+void _in_servant_routine( rtems_id null_id, void * task_node);
 
 /* @brief constructing a O-servant routine for timer
  * This function act as a parameter of function rtems_timer_fire_after()
  * @param[in] id is the O-servant belonging task id
  * */
-void _out_servant_routine( rtems_id null_id, void * task_id );
+void _out_servant_routine( rtems_id null_id, void * task_node);
 
 
 /***********************************************************/
@@ -179,8 +179,10 @@ void * _get_runnable(tid_t id, Queue_type type)
 {
   void * runnable;
   /* No such a task exists */
-  if( pspm_smp_task_manager.Task_Node_array[id] == NULL )
+  if( pspm_smp_task_manager.Task_Node_array[id] == NULL ){
+    printf("Error: task %d is not created\n", id);
     return NULL;
+  }
 
   switch(type){
     case IN_QUEUE:
@@ -193,6 +195,7 @@ void * _get_runnable(tid_t id, Queue_type type)
       runnable = pspm_smp_task_manager.Task_Node_array[id]->o_servant.runnable;
       break;
     default:
+      printf("Error: No runnable is found\n");
       runnable = NULL;
   }
   return runnable;
@@ -203,26 +206,26 @@ void * _get_runnable(tid_t id, Queue_type type)
 /*        Servant Implementation                           */
 /***********************************************************/
 
-void _in_servant_routine(rtems_id null_id, void * task_id )
+void _in_servant_routine(rtems_id null_id, void * task_node)
 {
   pspm_smp_message message;
   rtems_id timer_id;
   rtems_interval period;
   rtems_status_code status;
-  rtems_id id = *(rtems_id *)task_id;
+  Task_Node * node= (Task_Node *)task_node;
   ServantRunnable runnable;
 
   /* Obtaining servant timer id */
-  timer_id = pspm_smp_task_manager.Task_Node_array[id]->i_servant.id;
+  timer_id = node->o_servant.id;
   /* Set the subsequent timer */
   rtems_timer_reset(timer_id);
 
-  if((runnable = (ServantRunnable)_get_runnable(id, IN_QUEUE)) == NULL){
-    printf("Error: No such a task (tid = %d) when creating a I-Servant\n", id);
+  if((runnable = (ServantRunnable)(node->i_servant.runnable)) == NULL){
+    printf("Error: No such a task (tid = %d) when creating a I-Servant\n", node->id);
   } else {
     runnable( &message);
 
-    _pspm_smp_message_queue_IsC( id, &message);
+    _pspm_smp_message_queue_IsC( node->id, &message);
   }
 }
 
@@ -230,25 +233,25 @@ void _in_servant_routine(rtems_id null_id, void * task_id )
  * This function act as a parameter of function rtems_timer_fire_after()
  * @param[in] id is the O-servant belonging task id
  * */
-void _out_servant_routine( rtems_id null_id, void * task_id )
+void _out_servant_routine( rtems_id null_id, void * task_node)
 {
   pspm_smp_message message;
   rtems_id timer_id;
   rtems_interval period;
-  rtems_id id = *(rtems_id *)task_id;
+  Task_Node * node= (Task_Node *)task_node;
   rtems_status_code status;
   ServantRunnable runnable;
 
   /* Obtaining servant timer id */
-  timer_id = pspm_smp_task_manager.Task_Node_array[id]->o_servant.id;
+  timer_id = node->o_servant.id;
   /* Set the subsequent timer */
   rtems_timer_reset(timer_id);
 
-  if((runnable = (ServantRunnable)_get_runnable(id, OUT_QUEUE)) == NULL){
-    printf("Error: No such a task (tid = %d) when creating a O-Servant\n", id);
+  if((runnable = (ServantRunnable)node->o_servant.runnable) == NULL){
+    printf("Error: No such a task (tid = %d) when creating a O-Servant\n", node->id);
   } else {
     /* Receive message from OUT_QUEUE. There may be multiple messages */
-    status =_pspm_smp_message_queue_OrC( id, &message);
+    status =_pspm_smp_message_queue_OrC( node->id, &message);
     if(status != RTEMS_UNSATISFIED){
         runnable( &message);
     }
@@ -306,7 +309,8 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
    * Here, initialize the task node element in the scheduler EDF SMP node
    * This operation connects the rtems kernel with multicore PSPM
    * */
-  node->task_node = (pspm_smp_task_manager.Task_Node_array[id]);
+  node->task_node = pspm_smp_task_manager.Task_Node_array[id];
+
 
   /******************************************************/
   /*          The creation of I-Servant and O-Servant   */
@@ -319,13 +323,13 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
   status = rtems_timer_create( name, &in_timer_id );
   directive_failed(status, "rtems_timer_create");
   pspm_smp_task_manager.Task_Node_array[id]->i_servant.id = in_timer_id;
-  rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, &id);
+  rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
 
   /* Creating timer for O-Servant and set the timer id of its Servant structure */
   status = rtems_timer_create( name, &out_timer_id );
   directive_failed(status, "rtems_timer_create");
   pspm_smp_task_manager.Task_Node_array[id]->o_servant.id = out_timer_id;
-  rtems_timer_fire_after(out_timer_id, period, _out_servant_routine, &id);
+  rtems_timer_fire_after(out_timer_id, period, _out_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
 
   /******************************************************/
   /*        The creation of C-Servant                   */
@@ -343,11 +347,13 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
       status = rtems_rate_monotonic_period(rate_monotonic_id, period);
       directive_failed(status, "rtems_rate_monotonic_period");
 
-      status = _pspm_smp_message_queue_CrI(id, &msg);
-      if(status != RTEMS_UNSATISFIED){
-          runnable(&msg);
-          _pspm_smp_message_queue_CsO(id, &msg);
-      }
+      //status = _pspm_smp_message_queue_CrI(id, &msg);
+      //directive_failed(status, "comp servant message receive");
+      //if(status != RTEMS_UNSATISFIED){
+      //    printf("c servant has message\n");
+      //    runnable(&msg);
+      //    _pspm_smp_message_queue_CsO(id, &msg);
+      //}
     }
 }/* End Out_servant */
 
@@ -415,7 +421,7 @@ static void _pd2_subtasks_create(
  * */
 Task_Node_t  pspm_smp_task_create(
     tid_t task_id,
-    Task_Type task_type,
+    Task_type task_type,
     int64_t wcet,
     int64_t period
 )
@@ -445,6 +451,7 @@ Task_Node_t  pspm_smp_task_create(
         printf("Error: current task exists, please use unique task id\n");
     }else{
         pspm_smp_task_manager.Task_Node_array[task_id] = p_tnode;
+        pspm_smp_task_manager.array_length ++;
     }
 
     return (Task_Node_t)p_tnode;
@@ -464,6 +471,7 @@ void pspm_smp_servant_create(
     ServantRunnable o_runnable
 )
 {
+    printf("create i_runnable = %x\n", i_runnable);
   /* Set the Servant runnable of a Periodic task */
   ((Task_Node *)task)->i_servant.runnable = i_runnable;
   ((Task_Node *)task)->c_servant.runnable = c_runnable;
@@ -478,7 +486,15 @@ void pspm_smp_servant_create(
 
 /***********************************************************/
 /*        Message Passing Interfaces Implementation        */
-/***********************************************************/
+/************************************************************/
+static void * _pspm_smp_memcpy(void *dst, const void *src, unsigned int n)
+{
+    unsigned char *d = dst;
+    const unsigned char *s = src;
+
+    while(n-- > 0) *d++ = *s++;
+    return dst;
+}
 
 void _message_queue_create(Task_Node * task)
 {
@@ -518,6 +534,13 @@ void _message_queue_create(Task_Node * task)
   }
 }
 
+void pspm_smp_message_initialize(pspm_smp_message *msg)
+{
+  msg->address = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
+  msg->size = 0;
+  msg->sender = 0;
+}
+
 
 pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg)
 {
@@ -555,7 +578,7 @@ pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg)
 
 rtems_status_code _message_queue_send_message(rtems_id qid, pspm_smp_message * msg)
 {
-  return rtems_message_queue_send(qid, msg->address, msg->size);
+  return rtems_message_queue_send(qid, msg, sizeof(pspm_smp_message));
 }
 
 
@@ -565,19 +588,19 @@ rtems_status_code _message_queue_receive_message(rtems_id qid, pspm_smp_message 
    * Since I-Servant has higher prior execution than C-Servants,
    * the In_message_queue of current task has at least one message.
    * */
-  pspm_smp_message message;
+  pspm_smp_message *message;
   rtems_status_code status;
   void * out;
   size_t * size_out;
   int i;
 
   status  = rtems_message_queue_receive(qid, out, size_out, RTEMS_NO_WAIT, RTEMS_NO_TIMEOUT);
-  message = RTEMS_CONTAINER_OF(out, pspm_smp_message, address);
-  msg->size = *size_out;
+
+  message = (pspm_smp_message *)out;
+  msg->size = message->size;
   msg->sender = message->sender;
-  for(i = 0 ; i < *size_out; ++i){
-    msg->address[i] = message->address[i];
-  }
+  _pspm_smp_memcpy(msg->address, message->address, message->size);
+
   return status;
 }
 

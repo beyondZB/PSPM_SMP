@@ -33,11 +33,10 @@
 #define MESSAGE_BUFFER_LENGTH 10
 
 typedef struct _Message{
-  int32_t address[MESSAGE_DATA_LENGTH]; /*The start address of the Message*/
+  void *address; /*The start address of the Message*/
   size_t size; /*The length of Message */
   tid_t sender; /* the task id of Message sender */
 }pspm_smp_message;
-
 
 
 /* functions used in init.c */
@@ -105,6 +104,7 @@ pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg);
  * */
 pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg);
 
+void pspm_smp_message_initialize(pspm_smp_message *msg);
 
 /* This function must be called in timeslice function to obtain the subsequent subtasks timing information */
 //tid_t _get_task_id(Thread_Control * executing)
@@ -131,7 +131,7 @@ pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg);
  * */
 Task_Node_t pspm_smp_task_create(
   tid_t task_id,
-  Task_Type task_type,
+  Task_type task_type,
   int64_t wcet,
   int64_t period
 );
