@@ -282,7 +282,7 @@ void _out_servant_routine( rtems_id null_id, void * task_node)
     /* Receive message from OUT_QUEUE. There may be multiple messages */
     status = _pspm_smp_message_queue_OrC( node->id, &message);
     if(RTEMS_UNSATISFIED == status){
-        printf("The OUT_QUEUE is empty\n");
+        printf("No message should output in task %d\n", node->id);
     }else{
         runnable( &message);
     }
@@ -372,22 +372,24 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
 
   /* Entry the while loop of a periodic rtems task */
   while(1){
-      printf("Make sure C-Servant %d starts\n", id);
-      //rtems_test_busy_cpu_usage(0, 90000); // busy for 90000 ns
+    /*rtems_test_busy_cpu_usage(0, 90000);  busy for 90000 ns */
 
-      /* In rtems, periodic tasks are created by rate monotonic mechanism */
-      status = rtems_rate_monotonic_period(rate_monotonic_id, period);
-      directive_failed(status, "rtems_rate_monotonic_period");
+    /* In rtems, periodic tasks are created by rate monotonic mechanism */
+    status = rtems_rate_monotonic_period(rate_monotonic_id, period);
+    directive_failed(status, "rtems_rate_monotonic_period");
 
-      status = _pspm_smp_message_queue_CrI(id, &msg);
-      if(RTEMS_UNSATISFIED == status){
-          continue;
-      }
-      printf("c servant has message\n");
-      runnable(&msg);
-      msg.sender = id;
-      _pspm_smp_message_queue_CsO(id, &msg);
-    }
+    /* Receive message from IN_QUEUE of current task */
+    status = _pspm_smp_message_queue_CrI(id, &msg);
+
+    if(RTEMS_UNSATISFIED == status) continue;
+
+    printf("C-Servant in Task %d has receive message from I-Servant\n", id);
+    runnable(&msg);
+    /* set the message sender as current task */
+    msg.sender = id;
+    /* Send message to OUT_QUEUE of current task */
+    _pspm_smp_message_queue_CsO(id, &msg);
+  }
 }/* End Out_servant */
 
 
@@ -584,7 +586,7 @@ pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg)
   msg->sender = _get_current_task_id();
   status = _pspm_smp_message_queue_CsC(id, msg);
   if(RTEMS_UNSATISFIED == status){
-      printf("Error: Queue in target task is full\n");
+      printf("Error: Message send in CsC is UNSATISFIED\n");
       return UNSATISFIED;
   }
   return SATISFIED;

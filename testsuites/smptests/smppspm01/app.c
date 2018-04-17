@@ -14,12 +14,14 @@ void i_servant_0(pspm_smp_message *msg)
 
   data_array[0] = 10;
   data_array[1] = 20;
-  printf("Task 0 Input:\n");
   msg->size = 2;
+  printf("\n#############################\n");
+  printf("Task 0 obtains input: including %d messages\n", msg->size);
   /* the message sender will be setted automatically by the runtime */
   for( i = 0; i < msg->size; ++i){
-    printf("No.%d: %u\n", i+1, data_array[i]);
+    printf("%u\t",  data_array[i]);
   }
+  printf("\n#############################\n");
 }
 
 void i_servant_1(pspm_smp_message *msg)
@@ -31,11 +33,14 @@ void i_servant_1(pspm_smp_message *msg)
 
   data_array[0] = 100;
   msg->size = 1;
-  printf("Task 1 Input:\n");
+  printf("\n#############################\n");
+  printf("Task 1 obtains input: including %d messages\n", msg->size);
   /* the message sender will be setted automatically by the runtime */
   for( i = 0; i < msg->size; ++i){
-    printf("No.%d: %u\n", i+1, data_array[i]);
+    printf("%u\t", data_array[i]);
   }
+  printf("\n");
+  printf("\n#############################\n");
 }
 
 void c_servant_0( pspm_smp_message * msg )
@@ -46,7 +51,7 @@ void c_servant_0( pspm_smp_message * msg )
 
   data_array = (uint32_t *)msg->address;
 
-  printf("Now is in c_servant_0\n");
+  printf("C-Servant of Task 0 runs\n");
 
   /* Obtaining message from IN_QUEUE and send them to OUT_QUEUE */
   for(i = 0; i < msg->size; ++i){
@@ -56,9 +61,9 @@ void c_servant_0( pspm_smp_message * msg )
   /* Send the updated message to the COMP_QUEUE of task 1 */
   status = pspm_smp_message_queue_send(1, msg);
   if(SATISFIED == status){
-      printf("Task 1 message send successfully\n");
+      printf("Messages of Task 0 send successfully\n");
   }else{
-      printf("Task 1 message send failed\n");
+      printf("Messages of Task 0 send failed\n");
   }
 
 
@@ -76,7 +81,7 @@ void c_servant_1( pspm_smp_message * msg )
   /* Initialize a local message, whose data can be used global */
   pspm_smp_message_initialize(&message);
 
-  printf("Now is in c_servant_1\n");
+  printf("C-Servant of Task 1 runs\n");
   /* Obtaining message from IN_QUEUE and multiple 100 */
   for(i = 0; i < msg->size; ++i){
     data_array[i] *= 100;
@@ -86,13 +91,13 @@ void c_servant_1( pspm_smp_message * msg )
   while(1){
       status = pspm_smp_message_queue_receive(&message);
       if(UNSATISFIED == status){
-          printf("No message sent from other tasks\n");
+          printf("Task 1 has no message received\n");
           break;
       }
       uint32_t * data_receive;
       data_receive = (uint32_t *)message.address;
 
-      printf("The message sender is %d\n", message.sender);
+      printf("Task 1 receives messages, and the sender is %d\n", message.sender);
 
       /* Message from C-Servant 0 has two elements */
       if( message.sender == 0 ){
@@ -110,10 +115,12 @@ void o_servant_0(pspm_smp_message *msg)
   uint32_t   *data_array;
   data_array = (uint32_t *)msg->address;
 
-  printf("Task 0 Output:\n");
+  printf("\n********************\n");
+  printf("Task 0 output: including %d messages\n",msg->size);
   for( i = 0; i < msg->size; ++i){
-    printf("No.%d: %u\n", i+1, data_array[i]);
+    printf("%u\t",  data_array[i]);
   }
+  printf("\n********************\n");
 }
 
 void o_servant_1(pspm_smp_message * msg)
@@ -122,8 +129,11 @@ void o_servant_1(pspm_smp_message * msg)
   uint32_t   *data_array;
   data_array = (uint32_t *)msg->address;
 
-  printf("Task 1 Output:\n");
+  printf("\n********************\n");
+  printf("Task 1 output: including %d messages\n",msg->size);
   for( i = 0; i < msg->size; ++i){
-    printf("No.%d: %u\n", i+1, data_array[i]);
+    printf("%u\t",  data_array[i]);
   }
+  printf("\n********************\n");
 }
+
