@@ -1,6 +1,6 @@
 /**
  * @file
- * 
+ *
  * @brief Dispatch Thread
  * @ingroup ScoreThread
  */
@@ -29,6 +29,10 @@
 #include <rtems/score/userextimpl.h>
 #include <rtems/score/wkspace.h>
 #include <rtems/config.h>
+
+#include <rtems/score/scheduleredfimpl.h>
+#include <rtems/score/scheduleredf.h>
+#include <rtems/score/schedulersmp.h>
 
 #if ( CPU_HARDWARE_FP == TRUE ) || ( CPU_SOFTWARE_FP == TRUE )
 Thread_Control *_Thread_Allocated_fp;
@@ -170,6 +174,13 @@ static void _Thread_Run_post_switch_actions( Thread_Control *executing )
   _Thread_State_release( executing, &lock_context );
 }
 
+static Scheduler_SMP_Node * thread_get_smp_node(Thread_Control * executing)
+{
+    Scheduler_Node *scheduler_node = _Thread_Scheduler_get_home_node( executing );
+    Scheduler_SMP_Node *edf_node = (Scheduler_SMP_Node *)(scheduler_node);
+    return edf_node;
+}
+
 void _Thread_Do_dispatch( Per_CPU_Control *cpu_self, ISR_Level level )
 {
   Thread_Control *executing;
@@ -194,6 +205,24 @@ void _Thread_Do_dispatch( Per_CPU_Control *cpu_self, ISR_Level level )
 
     _Thread_Preemption_intervention( cpu_self );
     heir = _Thread_Get_heir_and_make_it_executing( cpu_self );
+
+    //zb +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    if(executing == heir){
+        printf("\t\t\t==%x\t%d\t%llu\n\n", executing->current_state, executing->Object.id, thread_get_smp_node(executing)->priority);
+    }
+    else{
+        printf("\t\t\t%x\t%d -->> %d\t\t%llu -> %llu\t%d\n\n", executing->current_state, executing->Object.id, heir->Object.id, thread_get_smp_node(executing)->priority, thread_get_smp_node(heir)->priority,
+                (thread_get_smp_node(executing)->priority >= thread_get_smp_node(heir)->priority));
+    }
+    if(executing->current_state == STATES_READY &&
+            executing->Start.budget_algorithm == THREAD_CPU_BUDGET_ALGORITHM_RESET_TIMESLICE &&
+            executing->cpu_time_budget != 50 &&
+            heir != executing){
+        printf("\n%d should keep executing!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", executing->cpu_time_budget);
+//        goto post_switch;
+//          heir = executing;
+    }
+    //zb +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     /*
      *  When the heir and executing are the same, then we are being

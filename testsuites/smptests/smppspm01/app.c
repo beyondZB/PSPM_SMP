@@ -5,6 +5,15 @@
  * */
 #include "app.h"
 
+static void my_delay(int ticks)
+{
+  rtems_interval start, stop;
+  start = rtems_clock_get_ticks_since_boot();
+  do {
+    stop = rtems_clock_get_ticks_since_boot();
+  } while ( (stop - start) < ticks  );
+}
+
 void i_servant_0(pspm_smp_message *msg)
 {
   int i;
@@ -53,6 +62,12 @@ void c_servant_0( pspm_smp_message * msg )
 
   printf("C-Servant of Task 0 runs\n");
 
+  for(int j = 0; j < 70; j++)
+  {
+//      rtems_test_busy_cpu_usage(0, 1000000);  //busy for 90000 ns
+      my_delay(1);
+      printf("&");
+  }
   /* Obtaining message from IN_QUEUE and send them to OUT_QUEUE */
   for(i = 0; i < msg->size; ++i){
       data_array[i] *=100;
@@ -66,8 +81,7 @@ void c_servant_0( pspm_smp_message * msg )
       printf("Messages of Task 0 send failed\n");
   }
 
-
-
+  printf("c_servant_0 finished\n");
 }
 
 void c_servant_1( pspm_smp_message * msg )
@@ -82,6 +96,12 @@ void c_servant_1( pspm_smp_message * msg )
   pspm_smp_message_initialize(&message);
 
   printf("C-Servant of Task 1 runs\n");
+  for(int j = 0; j < 35; j++)
+  {
+//      rtems_test_busy_cpu_usage(0, 1000000);  //busy for 90000 ns
+      my_delay(1);
+      printf("@");
+  }
   /* Obtaining message from IN_QUEUE and multiple 100 */
   for(i = 0; i < msg->size; ++i){
     data_array[i] *= 100;
@@ -106,6 +126,7 @@ void c_servant_1( pspm_smp_message * msg )
           }
       }
   }
+  printf("c_servant_1 finished\n");
 }
 
 

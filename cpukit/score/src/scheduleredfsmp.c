@@ -25,6 +25,25 @@
  * @brief This is the core structure to connect PSPM SMP to rtems */
 PSPM_SMP pspm_smp_task_manager;
 
+uint64_t _pspm_smp_create_priority(double utility, uint32_t d, uint32_t b, uint32_t g)
+{
+    uint64_t priority = 0;
+    uint32_t bit_mask_low_31 = 0x7fffffff;
+    uint32_t dd = (-d) & bit_mask_low_31;
+    uint32_t bb = (b & 1);
+    if(utility < 0.5)
+        bb = 0;
+    uint32_t gg = g & bit_mask_low_31;
+
+    priority |= dd;
+    priority <<= 1;
+    priority |= bb;
+    priority <<= 31;
+    priority |= gg;
+//    priority <<= 1;
+
+    return priority;
+}
 
 /* obtain the current subtask of a task node */
 Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_current(
@@ -38,7 +57,9 @@ Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_current(
     Chain_Node * next = _Chain_Next(&current->Chain);
     scheduler_edf_smp_node->current = RTEMS_CONTAINER_OF(next, Subtask_Node, Chain);
 
-    return current;
+    _Assert(!rtems_chain_is_tail(scheduler_edf_smp_node->task_node.Subtask_Node_queue, scheduler_edf_smp_node->current));
+
+    return scheduler_edf_smp_node->current;
 }
 
 /* reset the current subtask of a task node, and return the first subtask node */
@@ -53,6 +74,158 @@ Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_reset(
     scheduler_edf_smp_node->current = RTEMS_CONTAINER_OF(first_node, Subtask_Node, Chain);
 
     return scheduler_edf_smp_node->current;
+}
+
+Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_get_first(Task_Node * task_node)
+{
+    Chain_Node * first_node = _Chain_First(& task_node->Subtask_Node_queue );
+
+    /* Set the current pointer to the first subtask node in the task node */
+    Subtask_Node * current = RTEMS_CONTAINER_OF(first_node, Subtask_Node, Chain);
+
+    return current;
+}
+
+Scheduler_EDF_SMP_Node *_get_Scheduler_EDF_SMP_Node(Thread_Control * the_thread)
+{
+    Scheduler_Node *scheduler_node = _Thread_Scheduler_get_home_node( the_thread);
+    return (Scheduler_EDF_SMP_Node *)(scheduler_node);
+}
+
+static void apply_priority(
+  Thread_Control *thread,
+  Priority_Control new_priority
+)
+{
+  Scheduler_Node *scheduler_node = _Thread_Scheduler_get_home_node( thread );
+  scheduler_node->Priority.value = new_priority << 1;
+}
+
+static void change_priority(
+  Thread_Control *thread,
+  Priority_Control new_priority
+)
+{
+  Per_CPU_Control *cpu_self;
+
+  cpu_self = _Thread_Dispatch_disable();
+
+  Thread_queue_Context queue_context;
+
+  apply_priority(thread, new_priority);
+  _Scheduler_Update_priority( thread );
+
+  _Thread_Dispatch_enable( cpu_self );
+}
+
+void _Scheduler_PSPM_Tick(
+  const Scheduler_Control *scheduler,
+  Thread_Control          *executing
+)
+{
+  (void) scheduler;
+
+  /*
+   *  If the thread is not preemptible or is not ready, then
+   *  just return.
+   */
+
+  if ( !executing->is_preemptible )
+    return;
+
+  if ( !_States_Is_ready( executing->current_state ) )
+    return;
+
+  /*
+   *  The cpu budget algorithm determines what happens next.
+   */
+
+  switch ( executing->budget_algorithm ) {
+    case THREAD_CPU_BUDGET_ALGORITHM_NONE:
+      break;
+
+    case THREAD_CPU_BUDGET_ALGORITHM_RESET_TIMESLICE:
+    #if defined(RTEMS_SCORE_THREAD_ENABLE_EXHAUST_TIMESLICE)
+      case THREAD_CPU_BUDGET_ALGORITHM_EXHAUST_TIMESLICE:
+    #endif
+      if ( (int)(--executing->cpu_time_budget) <= 0 ) {
+          Scheduler_EDF_SMP_Node * edf_smp_node = _get_Scheduler_EDF_SMP_Node(executing);
+          Subtask_Node * subtask_node = _Scheduler_EDF_SMP_Subtask_Chain_current(edf_smp_node);
+          uint64_t pd2prio = _pspm_smp_create_priority(edf_smp_node->task_node->utility, edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length, subtask_node->b, subtask_node->g);
+//          uint64_t pd2prio = subtask_node->d;
+          printf("%d +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ %llu \n", edf_smp_node->task_node->id, pd2prio<<1);
+          change_priority(executing, pd2prio);
+
+        /*
+         *  A yield performs the ready chain mechanics needed when
+         *  resetting a timeslice.  If no other thread's are ready
+         *  at the priority of the currently executing thread, then the
+         *  executing thread's timeslice is reset.  Otherwise, the
+         *  currently executing thread is placed at the rear of the
+         *  FIFO for this priority and a new heir is selected.
+         */
+        _Thread_Yield( executing );
+        executing->cpu_time_budget =
+          rtems_configuration_get_ticks_per_timeslice();
+      }
+      else/* if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)*/
+      {
+          change_priority(executing, 20);
+      }
+      break;
+
+    #if defined(RTEMS_SCORE_THREAD_ENABLE_SCHEDULER_CALLOUT)
+      case THREAD_CPU_BUDGET_ALGORITHM_CALLOUT:
+	if ( --executing->cpu_time_budget == 0 )
+	  (*executing->budget_callout)( executing );
+	break;
+    #endif
+  }
+}
+
+void _Scheduler_PSPM_EDF_Release_job(
+  const Scheduler_Control *scheduler,
+  Thread_Control          *the_thread,
+  Priority_Node           *priority_node,
+  uint64_t                 deadline,
+  Thread_queue_Context    *queue_context
+)
+{
+  (void) scheduler;
+
+  _Thread_Wait_acquire_critical( the_thread, queue_context );
+
+  Scheduler_EDF_SMP_Node * edf_smp_node = _get_Scheduler_EDF_SMP_Node(the_thread);
+  Subtask_Node * subtask_node = _Scheduler_EDF_SMP_Subtask_Chain_reset(edf_smp_node);
+
+  edf_smp_node->release_time = deadline - edf_smp_node->task_node->period;
+
+  printf("maximum_priority ========== %llx\n", scheduler->maximum_priority);
+  /*
+   * There is no integer overflow problem here due to the
+   * SCHEDULER_PRIORITY_MAP().  The deadline is in clock ticks.  With the
+   * minimum clock tick interval of 1us, the uptime is limited to about 146235
+   * years.
+   */
+  _Priority_Node_set_priority(
+    priority_node,
+//    SCHEDULER_PRIORITY_MAP( deadline )
+    SCHEDULER_PRIORITY_MAP(_pspm_smp_create_priority(edf_smp_node->task_node->utility, edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length, subtask_node->b, subtask_node->g))
+//    SCHEDULER_PRIORITY_MAP(subtask_node->d)
+    );
+
+  if ( _Priority_Node_is_active( priority_node ) ) {
+    _Thread_Priority_changed(
+      the_thread,
+      priority_node,
+      false,
+      queue_context
+    );
+  } else {
+    _Thread_Priority_add( the_thread, priority_node, queue_context );
+  }
+
+  _Thread_Wait_release_critical( the_thread, queue_context );
 }
 
 static inline Scheduler_EDF_SMP_Context *

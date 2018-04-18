@@ -376,6 +376,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
 
     /* In rtems, periodic tasks are created by rate monotonic mechanism */
     status = rtems_rate_monotonic_period(rate_monotonic_id, period);
+    printf("taskid = %d\t", id);
     directive_failed(status, "rtems_rate_monotonic_period");
 
     /* Receive message from IN_QUEUE of current task */
@@ -431,19 +432,20 @@ static void _pd2_subtasks_create(
     )
 {
   rtems_chain_initialize_empty( &p_tnode->Subtask_Node_queue );
-  uint32_t min_group_deadline = p_tnode->period;
-  for(int i = p_tnode->wcet; i >= 1; i--)
+  uint32_t min_group_deadline = p_tnode->quant_period;
+  for(int i = p_tnode->quant_wcet; i >= 1; i--)
   {
     Subtask_Node *p_new_snode = (Subtask_Node *)malloc(sizeof(Subtask_Node));
     p_new_snode->r = myfloor((double)(i - 1) / p_tnode->utility);
     p_new_snode->d = myceil((double)i / p_tnode->utility);
     p_new_snode->b = myceil((double)i / p_tnode->utility) - myfloor((double)i / p_tnode->utility);
     /* the b(Ti) of the last subtask should be 0 */
-    p_new_snode->b = (i == p_tnode->wcet) ? 0 : p_new_snode->b;
+    p_new_snode->b = (i == p_tnode->quant_wcet) ? 0 : p_new_snode->b;
     _group_deadline_update(p_tnode->utility, p_new_snode, &min_group_deadline);
 
     /* prepend the subtask into subtask node queue */
     rtems_chain_prepend_unprotected( &p_tnode->Subtask_Node_queue, &p_new_snode->Chain );
+    printf("task%d-%d\td = %u\tb = %u\tg = %u\n", p_tnode->id, i, p_new_snode->d, p_new_snode->b, p_new_snode->g);
   }
 }
 
@@ -474,7 +476,7 @@ Task_Node_t  pspm_smp_task_create(
     /*Note that : the quantum length is presented in number of ticks */
     p_tnode->quant_wcet =  myceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
     p_tnode->quant_period =  myceil((double)p_tnode->period / pspm_smp_task_manager.quantum_length);
-    p_tnode->utility = (double)p_tnode->wcet / p_tnode->period;
+    p_tnode->utility = (double)p_tnode->quant_wcet / p_tnode->quant_period;
 
     /* calculate the PD2 relative timing information for scheduling subtasks */
     _pd2_subtasks_create(p_tnode);
@@ -797,7 +799,7 @@ rtems_status_code _pspm_smp_message_queue_OrC( tid_t id, pspm_smp_message *msg)
 #define CONFIGURE_MICROSECONDS_PER_TICK 1000
 
 /* 1 timeslice == 50 ticks */
-/* #define CONFIGURE_TICKS_PER_TIMESLICE 4 */
+#define CONFIGURE_TICKS_PER_TIMESLICE QUANTUM_LENGTH
 #define CONFIGURE_MAXIMUM_PROCESSORS 1
 
 

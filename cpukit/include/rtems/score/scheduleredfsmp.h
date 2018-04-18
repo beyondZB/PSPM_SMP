@@ -121,6 +121,11 @@ typedef struct {
 
   Subtask_Node * current;
 
+  /*
+   * @brief current job release time
+   */
+  uint64_t release_time;
+
 } Scheduler_EDF_SMP_Node;
 
 
@@ -131,6 +136,39 @@ Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_current( Scheduler_EDF_SMP_Node 
  * This function may be used in release job function in Rate management mechanism */
 Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_reset( Scheduler_EDF_SMP_Node * scheduler_edf_smp_node);
 
+/* get the first subtask_node of task_node
+ */
+Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_get_first(Task_Node * task_node);
+
+/* get the Scheduler_EDF_SMP_Node of the_thread
+ */
+Scheduler_EDF_SMP_Node *_get_Scheduler_EDF_SMP_Node(Thread_Control * the_thread);
+
+/* create the pd2 priority
+ */
+uint64_t _pspm_smp_create_priority(double utility, uint32_t d, uint32_t b, uint32_t g);
+
+/**
+ * @brief Performs tick operations depending on the CPU budget algorithm for
+ * each executing thread.
+ *
+ * This routine is invoked as part of processing each clock tick.
+ *
+ * @param[in] scheduler The scheduler.
+ * @param[in] executing An executing thread.
+ */
+void _Scheduler_PSPM_Tick(
+  const Scheduler_Control *scheduler,
+  Thread_Control          *executing
+);
+
+void _Scheduler_PSPM_EDF_Release_job(
+  const Scheduler_Control *scheduler,
+  Thread_Control          *the_thread,
+  Priority_Node           *priority_node,
+  uint64_t                 deadline,
+  Thread_queue_Context    *queue_context
+);
 
 typedef struct {
   /**
@@ -189,9 +227,9 @@ typedef struct {
     _Scheduler_EDF_SMP_Remove_processor, \
     _Scheduler_EDF_SMP_Node_initialize, \
     _Scheduler_default_Node_destroy, \
-    _Scheduler_EDF_Release_job, \
+    _Scheduler_PSPM_EDF_Release_job, \
     _Scheduler_EDF_Cancel_job, \
-    _Scheduler_default_Tick, \
+    _Scheduler_PSPM_Tick, \
     _Scheduler_EDF_SMP_Start_idle, \
     _Scheduler_EDF_SMP_Set_affinity \
   }

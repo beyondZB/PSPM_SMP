@@ -113,11 +113,14 @@ rtems_task Init(
     /* Obtaining the LCM of task periods */
     lcm = LCM(lcm, task_node->period);
 
+    Subtask_Node * snode = _Scheduler_EDF_SMP_Subtask_Chain_get_first(task_node);
+
     status = rtems_task_create(
       rtems_build_name( 'P', 'T', 'A', task_id+'0' ),
-      2,
+//      _pspm_smp_create_priority(task_node->utility, snode->d * pspm_smp_task_manager.quantum_length, snode->b, snode->g) >> 31,
+      snode->d * pspm_smp_task_manager.quantum_length,
       RTEMS_MINIMUM_STACK_SIZE,
-      RTEMS_DEFAULT_MODES,
+      RTEMS_TIMESLICE,
       RTEMS_DEFAULT_ATTRIBUTES,
       &id[count]
     );
