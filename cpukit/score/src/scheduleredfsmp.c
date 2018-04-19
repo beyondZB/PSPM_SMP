@@ -29,11 +29,11 @@ uint64_t _pspm_smp_create_priority(double utility, uint32_t d, uint32_t b, uint3
 {
     uint64_t priority = 0;
     uint32_t bit_mask_low_31 = 0x7fffffff;
-    uint32_t dd = (-d) & bit_mask_low_31;
-    uint32_t bb = (b & 1);
+    uint32_t dd = (d) & bit_mask_low_31;
+    uint32_t bb = (~b & 1);
     if(utility < 0.5)
         bb = 0;
-    uint32_t gg = g & bit_mask_low_31;
+    uint32_t gg = (-g - 1) & bit_mask_low_31;
 
     priority |= dd;
     priority <<= 1;
@@ -150,11 +150,12 @@ void _Scheduler_PSPM_Tick(
     #endif
       if ( (int)(--executing->cpu_time_budget) <= 0 ) {
           Scheduler_EDF_SMP_Node * edf_smp_node = _get_Scheduler_EDF_SMP_Node(executing);
+          Scheduler_SMP_Node *smp_node = (Scheduler_SMP_Node *)edf_smp_node;
           Subtask_Node * subtask_node = _Scheduler_EDF_SMP_Subtask_Chain_current(edf_smp_node);
           uint64_t pd2prio = _pspm_smp_create_priority(edf_smp_node->task_node->utility, edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length, subtask_node->b, subtask_node->g);
-//          uint64_t pd2prio = subtask_node->d;
-          printf("%d +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ %llu \n", edf_smp_node->task_node->id, pd2prio<<1);
           change_priority(executing, pd2prio);
+//          uint64_t pd2prio = subtask_node->d;
+          printf("\t%d +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ %llx \n", edf_smp_node->task_node->id, smp_node->priority);
 
         /*
          *  A yield performs the ready chain mechanics needed when
@@ -200,19 +201,27 @@ void _Scheduler_PSPM_EDF_Release_job(
 
   edf_smp_node->release_time = deadline - edf_smp_node->task_node->period;
 
-  printf("maximum_priority ========== %llx\n", scheduler->maximum_priority);
+//  printf("maximum_priority ========== %llx\n", scheduler->maximum_priority);
   /*
    * There is no integer overflow problem here due to the
    * SCHEDULER_PRIORITY_MAP().  The deadline is in clock ticks.  With the
    * minimum clock tick interval of 1us, the uptime is limited to about 146235
    * years.
    */
+  uint64_t pd2prio = _pspm_smp_create_priority(
+          edf_smp_node->task_node->utility,
+          edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length,
+          subtask_node->b,
+          subtask_node->g
+          );
+  printf("The subtask priority of task %d is %llx\n", edf_smp_node->task_node->id, pd2prio);
+
   _Priority_Node_set_priority(
-    priority_node,
-//    SCHEDULER_PRIORITY_MAP( deadline )
-    SCHEDULER_PRIORITY_MAP(_pspm_smp_create_priority(edf_smp_node->task_node->utility, edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length, subtask_node->b, subtask_node->g))
-//    SCHEDULER_PRIORITY_MAP(subtask_node->d)
-    );
+          priority_node,
+          //    SCHEDULER_PRIORITY_MAP( deadline )
+          SCHEDULER_PRIORITY_MAP(pd2prio)
+          //    SCHEDULER_PRIORITY_MAP(subtask_node->d)
+          );
 
   if ( _Priority_Node_is_active( priority_node ) ) {
     _Thread_Priority_changed(
