@@ -121,11 +121,19 @@
       Scheduler_EDF_SMP_Ready_queue Ready[ ( max_cpu_count ) + 1 ]; \
     } SCHEDULER_EDF_SMP_CONTEXT_NAME( name )
 
+/* We implement pspm_smp base on the origin rtems edf smp scheduler.
+ * In pspm_smp our priority is a 64 bit number consists of three parts.
+ * While the origin maximum_priority is SCHEDULER_EDF_MAXIMUM_PRIORITY
+ *  with is a 32 bit number INT_MAX 0x7ffffff.
+ * So we now use SCHEULDER_EDF_SMP_MAXIMUM_PRIORITY
+ *  which is a 64 bit number 0x7fffffffffffffff to reference the maximum priority.
+ */
   #define RTEMS_SCHEDULER_TABLE_EDF_SMP( name, obj_name ) \
     { \
       &SCHEDULER_EDF_SMP_CONTEXT_NAME( name ).Base.Base.Base, \
       SCHEDULER_EDF_SMP_ENTRY_POINTS, \
-      SCHEDULER_EDF_MAXIMUM_PRIORITY, \
+      /* SCHEDULER_EDF_MAXIMUM_PRIORITY */ \
+      SCHEDULER_EDF_SMP_MAXIMUM_PRIORITY, \
       ( obj_name ) \
     }
 

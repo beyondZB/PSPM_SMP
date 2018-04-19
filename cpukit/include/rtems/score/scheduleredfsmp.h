@@ -25,13 +25,17 @@
 extern "C" {
 #endif
 
+#define SCHEDULER_EDF_SMP_MAXIMUM_PRIORITY (0x7fffffffffffffff)
+
+// PSPM_SMP+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /* Type of task id */
 typedef int32_t tid_t;
 /* Type of task defined in pspm.h */
 
-/* Type of subtasks
+/**
+ * Type of subtasks
  * This structure must be one of the structure in SMP_EDF scheduler
- * */
+ */
 typedef struct _Subtask_Node{
   Chain_Node Chain; /* subtasks are managed with chain structure  */
   /* following parameters are timing infos of subtasks:
@@ -50,11 +54,11 @@ typedef struct _Servent{
 /* The structure for tasks in multi-core PSPM
  * It is one member of the scheduler node Scheduler_EDF_SMP_Node
  * This structure must be one of the structure in SMP_EDF scheduler
- * */
+ **/
 typedef struct _Task_Node{
   Chain_Node Chain;     /* chain for tasks */
   tid_t id;             /* the global unique task id */
-  uint32_t type;       /* Task_type define in pspm.h */
+  uint32_t type;        /* Task_type define in pspm.h */
   uint32_t period;      /* period of task presented by number of ms */
   uint32_t wcet;        /* wcet of task presented by number of ms */
   uint32_t quant_period;/* period of task presented by number of quantum */
@@ -74,10 +78,10 @@ typedef struct _Task_Node{
 /*
  * @brief Global PSPM SMP structure for saving pspm tasks informations
  *
- * @param Task_Node_queue is the chain of tasks nodes (type is declared in scheduleredfsmp.h)
- * @param Task_Node_arary is the array of same tasks nodes, only different in implementation method for accelerating searching.
- * @param array_length is the length of array above
- * @param quantum_length is the developer defined quanta, which will be initialized in the init.c
+ *  Task_Node_queue is the chain of tasks nodes (type is declared in scheduleredfsmp.h)
+ *  Task_Node_arary is the array of same tasks nodes, only different in implementation method for accelerating searching.
+ *  array_length is the length of array above
+ *  quantum_length is the developer defined quanta, which will be initialized in the init.c
  * */
 typedef struct _PSPM_SMP{
   Chain_Control Task_Node_queue; /* The queue of task node created by user for saving information */
@@ -86,6 +90,9 @@ typedef struct _PSPM_SMP{
   uint32_t quantum_length;  /* The quantum length (in number of ticks) defined in system.h */
 }PSPM_SMP;
 
+/**
+ * @brief global variable which contains context of pspm_smp
+ */
 extern PSPM_SMP pspm_smp_task_manager;
 
 /**
@@ -119,6 +126,9 @@ typedef struct {
    */
   Task_Node * task_node;
 
+  /**
+   * @brief current subtask_node ofthe task
+   */
   Subtask_Node * current;
 
   /*
@@ -127,48 +137,7 @@ typedef struct {
   uint64_t release_time;
 
 } Scheduler_EDF_SMP_Node;
-
-
-/* Obtaining the current subtask of a task node, this function may be used in default tick function  */
-Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_current( Scheduler_EDF_SMP_Node * scheduler_edf_smp_node);
-
-/* Set the current subtask to the first one in a task node, and return the first subtask node.
- * This function may be used in release job function in Rate management mechanism */
-Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_reset( Scheduler_EDF_SMP_Node * scheduler_edf_smp_node);
-
-/* get the first subtask_node of task_node
- */
-Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_get_first(Task_Node * task_node);
-
-/* get the Scheduler_EDF_SMP_Node of the_thread
- */
-Scheduler_EDF_SMP_Node *_get_Scheduler_EDF_SMP_Node(Thread_Control * the_thread);
-
-/* create the pd2 priority
- */
-uint64_t _pspm_smp_create_priority(double utility, uint32_t d, uint32_t b, uint32_t g);
-
-/**
- * @brief Performs tick operations depending on the CPU budget algorithm for
- * each executing thread.
- *
- * This routine is invoked as part of processing each clock tick.
- *
- * @param[in] scheduler The scheduler.
- * @param[in] executing An executing thread.
- */
-void _Scheduler_PSPM_Tick(
-  const Scheduler_Control *scheduler,
-  Thread_Control          *executing
-);
-
-void _Scheduler_PSPM_EDF_Release_job(
-  const Scheduler_Control *scheduler,
-  Thread_Control          *the_thread,
-  Priority_Node           *priority_node,
-  uint64_t                 deadline,
-  Thread_queue_Context    *queue_context
-);
+// PSPM_SMP-------------------------------------------------------------------------------------
 
 typedef struct {
   /**
@@ -227,14 +196,99 @@ typedef struct {
     _Scheduler_EDF_SMP_Remove_processor, \
     _Scheduler_EDF_SMP_Node_initialize, \
     _Scheduler_default_Node_destroy, \
-    _Scheduler_PSPM_EDF_Release_job, \
+    _Scheduler_EDF_SMP_Rlease_job, \
     _Scheduler_EDF_Cancel_job, \
-    _Scheduler_PSPM_Tick, \
+    _Scheduler_EDF_SMP_Tick, \
     _Scheduler_EDF_SMP_Start_idle, \
     _Scheduler_EDF_SMP_Set_affinity \
   }
 
-void _Scheduler_EDF_SMP_Initialize( const Scheduler_Control *scheduler );
+// PSPM_SMP+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/**
+ * @brief Obtaining the current subtask of a task node,
+ *   this function may be used in default tick function
+ *
+ * @param[in] the Scheduler_EDF_SMP_Node of the task
+ */
+Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_current(
+        Scheduler_EDF_SMP_Node * scheduler_edf_smp_node
+);
+
+/**
+ * @brief Set the current subtask to the first one in a task node,
+ *   and return the first subtask node.
+ * This function may be used in release job function in Rate management mechanism
+ *
+ * @param[in] the Scheduler_EDF_SMP_Node of the task
+ */
+Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_reset(
+        Scheduler_EDF_SMP_Node * scheduler_edf_smp_node
+);
+
+/**
+ * @brief get the first subtask_node of task_node
+ *
+ * @param[in] the Task_Node of the task
+ */
+Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_get_first(
+        Task_Node * task_node
+);
+
+/**
+ * @brief get the Scheduler_EDF_SMP_Node of the_thread
+ *
+ * @param[in] the Thread_Control of the task
+ */
+Scheduler_EDF_SMP_Node *_get_Scheduler_EDF_SMP_Node(
+        Thread_Control * the_thread
+);
+
+/**
+ * @beif create the pd2 priority
+ *
+ * @param[in] utility is the utility of the task
+ * @param[in] d is the windows deadline, d(Ti) in pd2
+ * @param[in] b is the b(Ti) in pd2
+ * @param[in] g is the group deadline, D(Ti) in pd2
+ *
+ */
+uint64_t _Scheduler_EDF_SMP_priority_map(
+        double utility,
+        uint32_t d,
+        uint32_t b,
+        uint32_t g
+);
+
+/**
+ * @brief Performs tick operations depending on the CPU budget algorithm for
+ * each executing thread.
+ *
+ * This routine is invoked as part of processing each clock tick.
+ *
+ * @param[in] scheduler The scheduler.
+ * @param[in] executing An executing thread.
+ */
+void _Scheduler_EDF_SMP_Tick(
+  const Scheduler_Control *scheduler,
+  Thread_Control          *executing
+);
+
+/**
+ * @brief based on Scheduler_EDF_release_job.
+ *   Will chane priority of tasks as the rule of pspm_smp
+ */
+void _Scheduler_EDF_SMP_Rlease_job(
+  const Scheduler_Control *scheduler,
+  Thread_Control          *the_thread,
+  Priority_Node           *priority_node,
+  uint64_t                 deadline,
+  Thread_queue_Context    *queue_context
+);
+// PSPM_SMP-------------------------------------------------------------------------------------
+
+void _Scheduler_EDF_SMP_Initialize(
+        const Scheduler_Control *scheduler
+);
 
 void _Scheduler_EDF_SMP_Node_initialize(
   const Scheduler_Control *scheduler,

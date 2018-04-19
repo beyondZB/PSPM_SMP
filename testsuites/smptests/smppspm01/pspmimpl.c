@@ -438,9 +438,15 @@ static void _pd2_subtasks_create(
     Subtask_Node *p_new_snode = (Subtask_Node *)malloc(sizeof(Subtask_Node));
     p_new_snode->r = myfloor((double)(i - 1) / p_tnode->utility);
     p_new_snode->d = myceil((double)i / p_tnode->utility);
-    p_new_snode->b = myceil((double)i / p_tnode->utility) - myfloor((double)i / p_tnode->utility);
-    /* the b(Ti) of the last subtask should be 0 */
-    p_new_snode->b = (i == p_tnode->quant_wcet) ? 0 : p_new_snode->b;
+
+    if(p_tnode->utility < 0.5)
+        p_new_snode->b = 0;
+    else{
+        p_new_snode->b = myceil((double)i / p_tnode->utility) - myfloor((double)i / p_tnode->utility);
+        /* the b(Ti) of the last subtask should be 0 */
+        p_new_snode->b = (i == p_tnode->quant_wcet) ? 0 : p_new_snode->b;
+    }
+
     _group_deadline_update(p_tnode->utility, p_new_snode, &min_group_deadline);
 
     /* prepend the subtask into subtask node queue */

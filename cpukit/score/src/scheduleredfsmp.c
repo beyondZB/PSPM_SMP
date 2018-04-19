@@ -21,26 +21,47 @@
 #include <rtems/score/scheduleredfsmp.h>
 #include <rtems/score/schedulersmpimpl.h>
 
-/* Important !!!
- * @brief This is the core structure to connect PSPM SMP to rtems */
+/**
+ * @brief This is the core structure to connect PSPM SMP to rtems. Important !!!
+ */
 PSPM_SMP pspm_smp_task_manager;
 
-uint64_t _pspm_smp_create_priority(double utility, uint32_t d, uint32_t b, uint32_t g)
+uint64_t _Scheduler_EDF_SMP_priority_map(double utility, uint32_t d, uint32_t b, uint32_t g)
 {
+    /* The priority of pspm_smp is a 63 bits number consists of three parts: d_part, b_part, g_part.
+     *   The smaller the priority is, the prior the task should be.
+     * Reach part of the priority is used to compare on parameter in pd2.
+     *   The smaller each parts is, the prior the task should be!!!!!!!!!!!!!
+     *   So if the parameter in pd2 is the bigger the better, it number should be reverse in its part!!!!!!!
+     */
     uint64_t priority = 0;
-    uint32_t bit_mask_low_31 = 0x7fffffff;
-    uint32_t dd = (d) & bit_mask_low_31;
-    uint32_t bb = (~b & 1);
-    if(utility < 0.5)
-        bb = 0;
-    uint32_t gg = (-g - 1) & bit_mask_low_31;
 
-    priority |= dd;
+    /* d_part: priority[62:31], 32 bits
+     *   Used to compare d of task.
+     *   The smaller the d is, the prior the task is.
+     */
+    uint32_t d_part = d;
+
+    /* b_part: priority[30:30], 1 bit
+     *   Used to compare b of task.
+     *   b is 0 or 1. The task with b == 1 should be prior.
+     */
+    uint32_t b_part = (~b & 1);
+
+    /* g_part: priority[29:0], 30 bit
+     *   Used to compare g of task, g >= 0
+     *   the bigger the g is, the prior the task is.
+     *   the smaller the g_part = (-g - 1) is, the prior the task is.
+     */
+#define BIT_MASK_LOW_30 0x3fffffff
+    uint32_t g_part = (-g - 1) & BIT_MASK_LOW_30;
+
+    // Uset three parts we get before to construct the priority of task.
+    priority |= d_part;
     priority <<= 1;
-    priority |= bb;
+    priority |= b_part;
     priority <<= 31;
-    priority |= gg;
-//    priority <<= 1;
+    priority |= g_part;
 
     return priority;
 }
@@ -76,6 +97,7 @@ Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_reset(
     return scheduler_edf_smp_node->current;
 }
 
+/* get hte first subtask of a task */
 Subtask_Node * _Scheduler_EDF_SMP_Subtask_Chain_get_first(Task_Node * task_node)
 {
     Chain_Node * first_node = _Chain_First(& task_node->Subtask_Node_queue );
@@ -92,6 +114,9 @@ Scheduler_EDF_SMP_Node *_get_Scheduler_EDF_SMP_Node(Thread_Control * the_thread)
     return (Scheduler_EDF_SMP_Node *)(scheduler_node);
 }
 
+/**
+ * @brief change the priority in scheduler node.
+ */
 static void apply_priority(
   Thread_Control *thread,
   Priority_Control new_priority
@@ -101,7 +126,10 @@ static void apply_priority(
   scheduler_node->Priority.value = new_priority << 1;
 }
 
-static void change_priority(
+/**
+ * @brief change the priority in scheduler node and Scheduler_EDF_SMP_Node
+ */
+static void _Scheduler_EDF_SMP_change_priority(
   Thread_Control *thread,
   Priority_Control new_priority
 )
@@ -118,7 +146,14 @@ static void change_priority(
   _Thread_Dispatch_enable( cpu_self );
 }
 
-void _Scheduler_PSPM_Tick(
+/**
+ * @brief This function will be called in each tick to check if the timeslice is finished.
+ *   The Finish of timeslice, means that current subtask is finished. And next subtask will be switched here.
+ *   Subtask switch is equivalent to priority changing of the thread.
+ *   Otherwise, anytime in the time slice,
+ *   the executing thread's priority will be set as ceil priority to avoid preemption.
+ */
+void _Scheduler_EDF_SMP_Tick(
   const Scheduler_Control *scheduler,
   Thread_Control          *executing
 )
@@ -148,31 +183,40 @@ void _Scheduler_PSPM_Tick(
     #if defined(RTEMS_SCORE_THREAD_ENABLE_EXHAUST_TIMESLICE)
       case THREAD_CPU_BUDGET_ALGORITHM_EXHAUST_TIMESLICE:
     #endif
+      /*
+       * if time_slice is finished.
+       */
       if ( (int)(--executing->cpu_time_budget) <= 0 ) {
           Scheduler_EDF_SMP_Node * edf_smp_node = _get_Scheduler_EDF_SMP_Node(executing);
           Scheduler_SMP_Node *smp_node = (Scheduler_SMP_Node *)edf_smp_node;
           Subtask_Node * subtask_node = _Scheduler_EDF_SMP_Subtask_Chain_current(edf_smp_node);
-          uint64_t pd2prio = _pspm_smp_create_priority(edf_smp_node->task_node->utility, edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length, subtask_node->b, subtask_node->g);
-          change_priority(executing, pd2prio);
-//          uint64_t pd2prio = subtask_node->d;
-          printf("\t%d +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ %llx \n", edf_smp_node->task_node->id, smp_node->priority);
+          /*
+           * For each subtask, there will be a pd2prio.
+           * The pd2prio takes three parameter of pd2 into consideration.
+           * Subtask switch that is priority change will be done.
+           */
+          uint64_t pd2prio = _Scheduler_EDF_SMP_priority_map(edf_smp_node->task_node->utility, edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length, subtask_node->b, subtask_node->g);
+          _Scheduler_EDF_SMP_change_priority(executing, pd2prio);
+          printf("\n%d +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ %llx \n", edf_smp_node->task_node->id, smp_node->priority);
 
-        /*
-         *  A yield performs the ready chain mechanics needed when
-         *  resetting a timeslice.  If no other thread's are ready
-         *  at the priority of the currently executing thread, then the
-         *  executing thread's timeslice is reset.  Otherwise, the
-         *  currently executing thread is placed at the rear of the
-         *  FIFO for this priority and a new heir is selected.
-         */
-        _Thread_Yield( executing );
-        executing->cpu_time_budget =
-          rtems_configuration_get_ticks_per_timeslice();
+          /*
+           *  A yield performs the ready chain mechanics needed when
+           *  resetting a timeslice.  If no other thread's are ready
+           *  at the priority of the currently executing thread, then the
+           *  executing thread's timeslice is reset.  Otherwise, the
+           *  currently executing thread is placed at the rear of the
+           *  FIFO for this priority and a new heir is selected.
+           */
+          _Thread_Yield( executing );
+          executing->cpu_time_budget =
+              rtems_configuration_get_ticks_per_timeslice();
       }
-      else/* if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)*/
-      {
-          change_priority(executing, 20);
-      }
+      /*
+       * if time_slice is not finished.
+       * the task priority should be set as ceil priority.
+       */
+      else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
+          _Scheduler_EDF_SMP_change_priority(executing, 20);
       break;
 
     #if defined(RTEMS_SCORE_THREAD_ENABLE_SCHEDULER_CALLOUT)
@@ -184,7 +228,12 @@ void _Scheduler_PSPM_Tick(
   }
 }
 
-void _Scheduler_PSPM_EDF_Release_job(
+/*
+ * release first subtask of job,
+ *   which is equivalent to release_job of Thread and
+ *   set the priority as pd2prio of the first subtask.
+ */
+void _Scheduler_EDF_SMP_Rlease_job(
   const Scheduler_Control *scheduler,
   Thread_Control          *the_thread,
   Priority_Node           *priority_node,
@@ -201,14 +250,10 @@ void _Scheduler_PSPM_EDF_Release_job(
 
   edf_smp_node->release_time = deadline - edf_smp_node->task_node->period;
 
-//  printf("maximum_priority ========== %llx\n", scheduler->maximum_priority);
   /*
-   * There is no integer overflow problem here due to the
-   * SCHEDULER_PRIORITY_MAP().  The deadline is in clock ticks.  With the
-   * minimum clock tick interval of 1us, the uptime is limited to about 146235
-   * years.
+   * Set the priority as the pd2prio of the first subtask.
    */
-  uint64_t pd2prio = _pspm_smp_create_priority(
+  uint64_t pd2prio = _Scheduler_EDF_SMP_priority_map(
           edf_smp_node->task_node->utility,
           edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length,
           subtask_node->b,

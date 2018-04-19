@@ -42,8 +42,7 @@ extern "C" {
  * 0x7fffffffffffffff, but the user API is limited to uint32_t or int for
  * thread priorities.  Ignore ILP64 targets for now.
  */
-//#define SCHEDULER_EDF_MAXIMUM_PRIORITY INT_MAX
-#define SCHEDULER_EDF_MAXIMUM_PRIORITY 0x7fffffffffffffff
+#define SCHEDULER_EDF_MAXIMUM_PRIORITY INT_MAX
 
 /**
  *  Entry points for the Earliest Deadline First Scheduler.
