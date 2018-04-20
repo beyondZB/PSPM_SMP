@@ -14,7 +14,6 @@
 #define CONFIGURE_INIT
 #include "pspm.h"
 
-
 #include <inttypes.h>
 
 const char rtems_test_name[] = "PSPM SMP 01";

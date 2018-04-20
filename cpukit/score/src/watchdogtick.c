@@ -113,5 +113,6 @@ void _Watchdog_Tick( Per_CPU_Control *cpu )
 
   _ISR_lock_Release_and_ISR_enable( &cpu->Watchdog.Lock, &lock_context );
 
+
   _Scheduler_Tick( cpu );
 }

@@ -18,6 +18,7 @@
   #include "config.h"
 #endif
 
+#include <rtems/rtems/clock.h>
 #include <rtems/score/scheduleredfsmp.h>
 #include <rtems/score/schedulersmpimpl.h>
 
@@ -25,6 +26,25 @@
  * @brief This is the core structure to connect PSPM SMP to rtems. Important !!!
  */
 PSPM_SMP pspm_smp_task_manager;
+uint64_t start, end, total;
+uint64_t count;
+
+void pspm_smp_start_count()
+{
+  start = rtems_clock_get_uptime_nanoseconds();
+}
+
+void pspm_smp_end_count()
+{
+  end = rtems_clock_get_uptime_nanoseconds();
+  total += end - start;
+  count++;
+}
+
+void pspm_smp_print_count()
+{
+  printf("The count result is %llu, the count is %u\n", total/count, count);
+}
 
 uint64_t _Scheduler_EDF_SMP_priority_map(double utility, uint32_t d, uint32_t b, uint32_t g)
 {

@@ -114,7 +114,7 @@ void c_servant_1( pspm_smp_message * msg )
       }
   }
 
-  for(int j = 0; j < 30; j++)
+  for(int j = 0; j < 25; j++)
   {
 //      rtems_test_busy_cpu_usage(0, 1000000);  //busy for 90000 ns
       my_delay(1);

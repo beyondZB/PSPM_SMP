@@ -6,6 +6,7 @@
 
 #include <timesys.h>
 #include <rtems/btimer.h>
+#include <rtems/score/scheduleredfsmp.h>
 
 #define BENCHMARKS 50000
 
@@ -43,6 +44,7 @@ rtems_task Task02( rtems_task_argument ignored )
   );
 
   TEST_END();
+  pspm_smp_print_count();
   rtems_test_exit( 0 );
 }
 

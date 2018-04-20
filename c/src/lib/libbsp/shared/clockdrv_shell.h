@@ -32,7 +32,7 @@
  *
  * @ingroup bsp_shared
  *
- * @brief Clock support 
+ * @brief Clock support
  *
  */
 #if CLOCK_DRIVER_USE_FAST_IDLE && CLOCK_DRIVER_ISRS_PER_TICK
@@ -126,12 +126,15 @@ void Clock_isr(void *arg);
 void Clock_isr(void *arg)
 {
 #else
+
+
 rtems_isr Clock_isr(rtems_vector_number vector);
 rtems_isr Clock_isr(
   rtems_vector_number vector
 )
 {
 #endif
+  /* added by wanbo, This is the time interrupts function for smp rtems */
   /*
    *  Accurate count of ISRs
    */
