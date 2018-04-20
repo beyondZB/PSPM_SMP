@@ -206,23 +206,23 @@ void _Thread_Do_dispatch( Per_CPU_Control *cpu_self, ISR_Level level )
     _Thread_Preemption_intervention( cpu_self );
     heir = _Thread_Get_heir_and_make_it_executing( cpu_self );
 
-    //zb +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    if(executing == heir){
-        printf("\t\t\t==%x\t%d\t%llu\n\n", executing->current_state, executing->Object.id, thread_get_smp_node(executing)->priority);
-    }
-    else{
-        printf("\t\t\t%x\t%d -->> %d\t\t%llx -> %llx\t%d\n\n", executing->current_state, executing->Object.id, heir->Object.id, thread_get_smp_node(executing)->priority, thread_get_smp_node(heir)->priority,
-                (thread_get_smp_node(executing)->priority >= thread_get_smp_node(heir)->priority));
-    }
-    if(executing->current_state == STATES_READY &&
-            executing->Start.budget_algorithm == THREAD_CPU_BUDGET_ALGORITHM_RESET_TIMESLICE &&
-            executing->cpu_time_budget != 20 &&
-            heir != executing){
-        printf("\n%d should keep executing!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", executing->cpu_time_budget);
-//        goto post_switch;
-//          heir = executing;
-    }
-    //zb +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//    //zb +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//    if(executing == heir){
+//        printf("\t\t\t==%x\t%d\t%llu\n\n", executing->current_state, executing->Object.id, thread_get_smp_node(executing)->priority);
+//    }
+//    else{
+//        printf("\t\t\t%x\t%d -->> %d\t\t%llx -> %llx\t%d\n\n", executing->current_state, executing->Object.id, heir->Object.id, thread_get_smp_node(executing)->priority, thread_get_smp_node(heir)->priority,
+//                (thread_get_smp_node(executing)->priority >= thread_get_smp_node(heir)->priority));
+//    }
+//    if(executing->current_state == STATES_READY &&
+//            executing->Start.budget_algorithm == THREAD_CPU_BUDGET_ALGORITHM_RESET_TIMESLICE &&
+//            executing->cpu_time_budget != 20 &&
+//            heir != executing){
+//        printf("\n%d should keep executing!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", executing->cpu_time_budget);
+////        goto post_switch;
+////          heir = executing;
+//    }
+//    //zb +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     /*
      *  When the heir and executing are the same, then we are being

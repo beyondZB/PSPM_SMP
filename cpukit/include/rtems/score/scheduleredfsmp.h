@@ -37,6 +37,10 @@ typedef int32_t tid_t;
  * This structure must be one of the structure in SMP_EDF scheduler
  */
 typedef struct _Subtask_Node{
+  /**
+   * @brief the no of subtask in a job.
+   */
+  uint32_t subtask_no;
   Chain_Node Chain; /* subtasks are managed with chain structure  */
   /* following parameters are timing infos of subtasks:
    * b(Ti), r(Ti), d(Ti), group deadline(Ti) in PD2*/

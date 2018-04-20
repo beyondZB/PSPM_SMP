@@ -250,7 +250,9 @@ void _in_servant_routine(rtems_id null_id, void * task_node)
   } else {
     message.address = node->in_message;
     message.size = 0;
+    printf("\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< t%d i-servant\n", node->id);
     runnable( &message);
+    printf("\n<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n", node->id);
     message.sender = node->id;
     _pspm_smp_message_queue_IsC( node->id, &message);
   }
@@ -284,7 +286,9 @@ void _out_servant_routine( rtems_id null_id, void * task_node)
     if(RTEMS_UNSATISFIED == status){
         printf("No message should output in task %d\n", node->id);
     }else{
+        printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>   t%d o-servant\n", node->id);
         runnable( &message);
+        printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\n\n", node->id);
     }
   }
 }
@@ -376,7 +380,6 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
 
     /* In rtems, periodic tasks are created by rate monotonic mechanism */
     status = rtems_rate_monotonic_period(rate_monotonic_id, period);
-    printf("taskid = %d\t", id);
     directive_failed(status, "rtems_rate_monotonic_period");
 
     /* Receive message from IN_QUEUE of current task */
@@ -384,8 +387,10 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
 
     if(RTEMS_UNSATISFIED == status) continue;
 
+    printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++t%d c-servant start\n\n", id);
     printf("C-Servant in Task %d has receive message from I-Servant\n", id);
     runnable(&msg);
+    printf("\n-------------------------------------------------------------------------t%d c-servant finished\n\n", id);
     /* set the message sender as current task */
     msg.sender = id;
     /* Send message to OUT_QUEUE of current task */
@@ -436,6 +441,7 @@ static void _pd2_subtasks_create(
   for(int i = p_tnode->quant_wcet; i >= 1; i--)
   {
     Subtask_Node *p_new_snode = (Subtask_Node *)malloc(sizeof(Subtask_Node));
+    p_new_snode->subtask_no = i;
     p_new_snode->r = myfloor((double)(i - 1) / p_tnode->utility);
     p_new_snode->d = myceil((double)i / p_tnode->utility);
 

@@ -24,13 +24,11 @@ void i_servant_0(pspm_smp_message *msg)
   data_array[0] = 10;
   data_array[1] = 20;
   msg->size = 2;
-  printf("\n#############################\n");
   printf("Task 0 obtains input: including %d messages\n", msg->size);
   /* the message sender will be setted automatically by the runtime */
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
-  printf("\n#############################\n");
 }
 
 void i_servant_1(pspm_smp_message *msg)
@@ -42,14 +40,11 @@ void i_servant_1(pspm_smp_message *msg)
 
   data_array[0] = 100;
   msg->size = 1;
-  printf("\n#############################\n");
   printf("Task 1 obtains input: including %d messages\n", msg->size);
   /* the message sender will be setted automatically by the runtime */
   for( i = 0; i < msg->size; ++i){
     printf("%u\t", data_array[i]);
   }
-  printf("\n");
-  printf("\n#############################\n");
 }
 
 void c_servant_0( pspm_smp_message * msg )
@@ -81,8 +76,6 @@ void c_servant_0( pspm_smp_message * msg )
       my_delay(1);
       printf("&");
   }
-
-  printf("c_servant_0 finished\n");
 }
 
 void c_servant_1( pspm_smp_message * msg )
@@ -96,7 +89,6 @@ void c_servant_1( pspm_smp_message * msg )
   /* Initialize a local message, whose data can be used global */
   pspm_smp_message_initialize(&message);
 
-  printf("C-Servant of Task 1 runs\n");
   /* Obtaining message from IN_QUEUE and multiple 100 */
   for(i = 0; i < msg->size; ++i){
     data_array[i] *= 100;
@@ -128,8 +120,6 @@ void c_servant_1( pspm_smp_message * msg )
       my_delay(1);
       printf("@");
   }
-
-  printf("c_servant_1 finished\n");
 }
 
 
@@ -139,12 +129,10 @@ void o_servant_0(pspm_smp_message *msg)
   uint32_t   *data_array;
   data_array = (uint32_t *)msg->address;
 
-  printf("\n********************\n");
   printf("Task 0 output: including %d messages\n",msg->size);
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
-  printf("\n********************\n");
 }
 
 void o_servant_1(pspm_smp_message * msg)
@@ -153,11 +141,9 @@ void o_servant_1(pspm_smp_message * msg)
   uint32_t   *data_array;
   data_array = (uint32_t *)msg->address;
 
-  printf("\n********************\n");
   printf("Task 1 output: including %d messages\n",msg->size);
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
-  printf("\n********************\n");
 }
 
