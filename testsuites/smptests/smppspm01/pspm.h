@@ -20,7 +20,7 @@
 #include "test_support.h"
 
 /* In number of ticks */
-#define QUANTUM_LENGTH 20
+#define QUANTUM_LENGTH 50
 
 #define TASK_NUM_MAX 20
 
@@ -105,21 +105,6 @@ pspm_status_code pspm_smp_message_queue_send(tid_t id, pspm_smp_message * msg);
 pspm_status_code pspm_smp_message_queue_receive(pspm_smp_message * msg);
 
 void pspm_smp_message_initialize(pspm_smp_message *msg);
-
-/* This function must be called in timeslice function to obtain the subsequent subtasks timing information */
-//tid_t _get_task_id(Thread_Control * executing)
-//{
-//  /* Some kernel including files must be included in this file,
-//   * Rather than including them in the pspm.h file */
-//  Scheduler_Node * base_node;
-//  Scheduler_EDF_SMP_Node * node;
-//  /* rtems/score/Threadimpl.h */
-//  base_node = _Thread_Scheduler_get_home_node( executing );
-//  node = _Scheduler_EDF_SMP_node_downcast( base_node );
-//
-//  return node->task_node->id;
-//}
-
 
 
 /* @brief Task Creation API
