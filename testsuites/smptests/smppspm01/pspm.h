@@ -20,7 +20,7 @@
 #include "test_support.h"
 
 /* In number of ticks */
-#define QUANTUM_LENGTH 50
+#define QUANTUM_LENGTH 10
 
 #define TASK_NUM_MAX 20
 

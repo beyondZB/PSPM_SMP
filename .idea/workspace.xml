@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="02da7d6b-10b2-48e5-a8e2-4e3057db636f" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/testsuites/smptests/smppspm01/pspm.h" afterPath="$PROJECT_DIR$/testsuites/smptests/smppspm01/pspm.h" />
-    </list>
+    <list default="true" id="02da7d6b-10b2-48e5-a8e2-4e3057db636f" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -16,8 +14,38 @@
       <file leaf-file-name="pspmimpl.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/pspmimpl.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-828">
-              <caret line="101" column="0" lean-forward="false" selection-start-line="101" selection-start-column="0" selection-end-line="104" selection-end-column="55" />
+            <state relative-caret-position="9576">
+              <caret line="544" column="34" lean-forward="true" selection-start-line="544" selection-start-column="34" selection-end-line="544" selection-end-column="34" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="main.c" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/main.c">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="414">
+              <caret line="23" column="24" lean-forward="false" selection-start-line="23" selection-start-column="24" selection-end-line="23" selection-end-column="24" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="init.c" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/init.c">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="810">
+              <caret line="99" column="0" lean-forward="true" selection-start-line="99" selection-start-column="0" selection-end-line="99" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="app.c" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/app.c">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1692">
+              <caret line="94" column="2" lean-forward="false" selection-start-line="94" selection-start-column="2" selection-end-line="94" selection-end-column="2" />
               <folding />
             </state>
           </provider>
@@ -26,8 +54,8 @@
       <file leaf-file-name="pspm.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/pspm.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-54">
-              <caret line="62" column="0" lean-forward="false" selection-start-line="62" selection-start-column="0" selection-end-line="62" selection-end-column="0" />
+            <state relative-caret-position="-159">
+              <caret line="32" column="28" lean-forward="false" selection-start-line="32" selection-start-column="28" selection-end-line="32" selection-end-column="28" />
               <folding />
             </state>
           </provider>
@@ -184,14 +212,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/pspm.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-54">
-          <caret line="62" column="0" lean-forward="false" selection-start-line="62" selection-start-column="0" selection-end-line="62" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cpukit/score/src/scheduleredfsmp.c">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -208,10 +228,42 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/main.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="414">
+          <caret line="23" column="24" lean-forward="false" selection-start-line="23" selection-start-column="24" selection-end-line="23" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/init.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="810">
+          <caret line="99" column="0" lean-forward="true" selection-start-line="99" selection-start-column="0" selection-end-line="99" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/app.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1692">
+          <caret line="94" column="2" lean-forward="false" selection-start-line="94" selection-start-column="2" selection-end-line="94" selection-end-column="2" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/pspm.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-159">
+          <caret line="32" column="28" lean-forward="false" selection-start-line="32" selection-start-column="28" selection-end-line="32" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/testsuites/smptests/smppspm01/pspmimpl.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-828">
-          <caret line="101" column="0" lean-forward="false" selection-start-line="101" selection-start-column="0" selection-end-line="104" selection-end-column="55" />
+        <state relative-caret-position="9576">
+          <caret line="544" column="34" lean-forward="true" selection-start-line="544" selection-start-column="34" selection-end-line="544" selection-end-column="34" />
           <folding />
         </state>
       </provider>
