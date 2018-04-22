@@ -22,10 +22,11 @@
 /* In number of ticks */
 #define QUANTUM_LENGTH 4
 
-#define TASK_NUM_MAX 20
+#define TASK_NUM_MAX 10
 
 /* The length of message data, in number of word */
 #define MESSAGE_DATA_LENGTH sizeof(pspm_smp_message)
+
 /*One message is allowed to be sent to at most TARGET_NUM_MAX tasks */
 #define TARGET_NUM_MAX 20
 

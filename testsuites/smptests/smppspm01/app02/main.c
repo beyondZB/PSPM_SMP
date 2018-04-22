@@ -17,11 +17,11 @@ void main()
 
   /* The creation of periodic tasks */
   /* The task start from 0, since every task will be mapped into a element in a array for convenient search */
-  task_nodes[0] = pspm_smp_task_create(0, PERIOD_TASK, 0.4, 10);
-  task_nodes[1] = pspm_smp_task_create(1, PERIOD_TASK, 3, 10);
-  task_nodes[2] = pspm_smp_task_create(2, PERIOD_TASK, 1.5, 10);
-  task_nodes[3] = pspm_smp_task_create(3, PERIOD_TASK, 2.8, 10);
-  task_nodes[4] = pspm_smp_task_create(4, PERIOD_TASK, 2.4, 10);
+  task_nodes[0] = pspm_smp_task_create(0, PERIOD_TASK, 4,  100);
+  task_nodes[1] = pspm_smp_task_create(1, PERIOD_TASK, 30, 100);
+  task_nodes[2] = pspm_smp_task_create(2, PERIOD_TASK, 15, 100);
+  task_nodes[3] = pspm_smp_task_create(3, PERIOD_TASK, 28, 100);
+  task_nodes[4] = pspm_smp_task_create(4, PERIOD_TASK, 24, 100);
 
   /* The creation of Servant in specific tasks */
   pspm_smp_servant_create(task_nodes[0], accSensor, accController, accActuator);
