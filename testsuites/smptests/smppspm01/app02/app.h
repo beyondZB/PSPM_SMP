@@ -10,31 +10,42 @@
 #include "pspm.h"
 
 /* Used in main.c */
-#define PERIOD_TASK_NUM 2
+#define PERIOD_TASK_NUM 5
 
-/* @brief I-Servant runnable
- * Reading data from environment, and send them as message to the C-servant
- * This runnable will be invoked when timer fires
- * @param[in out] msg The input message and output message
- * */
-void i_servant_0(pspm_smp_message * msg);
-void i_servant_1(pspm_smp_message * msg);
+/**************************/
+/* Accelerator Pedal Task */
+/**************************/
+void accSensor(pspm_smp_message *msg);
+void accController(pspm_smp_message *msg);
+void accActuator(pspm_smp_message *msg);
 
-/* @brief C-Servant runnable
- * Reading data from msg, and updating the data in the msg then writing to same message
- * This runnable will be invoked by smp scheduler Pfair
- * @param[in out] msg The input message and output message
- * */
-void c_servant_0(pspm_smp_message * msg);
-void c_servant_1(pspm_smp_message * msg);
+/**************************/
+/*     Throttle Task      */
+/**************************/
+void throttleSensor(pspm_smp_message *msg);
+void throttleController( pspm_smp_message * msg );
+void throttleActuator(pspm_smp_message *msg);
 
-/* @brief O-Servant runnable
- * Reading data from msg, and update the actuator
- * This runnable will be invoked when timer fires
- * @param[in out] msg The input message and output message
- * */
-void o_servant_0(pspm_smp_message * msg);
-void o_servant_1(pspm_smp_message * msg);
+/**************************/
+/*  Base Fuel Mass Task   */
+/**************************/
+void baseFMSensor(pspm_smp_message *msg);
+void baseFMController( pspm_smp_message * msg );
+void baseFMActuator(pspm_smp_message *msg);
+
+/****************************************************/
+/* Transient Fuel Mass Task and Total Fuel Mass Task*/
+/****************************************************/
+void transFMSensor(pspm_smp_message *msg);
+void transFMController( pspm_smp_message * msg );
+void inJectionTimeActuator(pspm_smp_message *msg);
+
+/****************************************************/
+/*            Ignition Timing Task                  */
+/****************************************************/
+void ignitionSensor(pspm_smp_message *msg);
+void ignitionController( pspm_smp_message * msg );
+void ignitionActuator(pspm_smp_message *msg);
 
 
 #endif

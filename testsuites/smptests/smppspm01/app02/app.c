@@ -5,49 +5,33 @@
  * */
 #include "app.h"
 
-static void my_delay(int ticks)
+static void my_delay(uint32_t ms)
 {
   rtems_interval start, stop;
-  start = rtems_clock_get_ticks_since_boot();
+  start = rtems_clock_get_uptime_nanoseconds();
   do {
-    stop = rtems_clock_get_ticks_since_boot();
-  } while ( (stop - start) < ticks  );
+    stop = rtems_clock_get_uptime_nanoseconds();
+  } while ( (stop - start) < ms);
 }
 
-void i_servant_0(pspm_smp_message *msg)
+/**************************/
+/* Accelerator Pedal Task */
+/**************************/
+
+void accSensor(pspm_smp_message *msg)
 {
   int i;
   uint32_t   *data_array;
 
   data_array = (uint32_t *)msg->address;
 
-  data_array[0] = 10;
-  data_array[1] = 20;
+  data_array[0] = 1;
+  data_array[1] = 2;
   msg->size = 2;
-  printf("Task 0 obtains input: including %d messages\n", msg->size);
-  /* the message sender will be setted automatically by the runtime */
-  for( i = 0; i < msg->size; ++i){
-    printf("%u\t",  data_array[i]);
-  }
+  printf("Task Accelerator obtains input: including %d messages\n", msg->size);
 }
 
-void i_servant_1(pspm_smp_message *msg)
-{
-  int i;
-  uint32_t   *data_array;
-
-  data_array = (uint32_t *)msg->address;
-
-  data_array[0] = 100;
-  msg->size = 1;
-  printf("Task 1 obtains input: including %d messages\n", msg->size);
-  /* the message sender will be setted automatically by the runtime */
-  for( i = 0; i < msg->size; ++i){
-    printf("%u\t", data_array[i]);
-  }
-}
-
-void c_servant_0( pspm_smp_message * msg )
+void accController(pspm_smp_message *msg)
 {
   int i;
   uint32_t   *data_array;
@@ -55,93 +39,314 @@ void c_servant_0( pspm_smp_message * msg )
 
   data_array = (uint32_t *)msg->address;
 
-  printf("C-Servant of Task 0 runs\n");
+  printf("C-Servant of task accelerator runs\n");
 
-  /* Obtaining message from IN_QUEUE and send them to OUT_QUEUE */
-  for(i = 0; i < msg->size; ++i){
-      data_array[i] *=100;
-  }
+  /* Sum the message data from sensor, and send the results */
+  data_array[0] += data_array[1] ;
+  msg->size = 1;
 
-  /* Send the updated message to the COMP_QUEUE of task 1 */
+  /* Send the updated message to the Throttle Controller */
   status = pspm_smp_message_queue_send(1, msg);
   if(SATISFIED == status){
       printf("Messages of Task 0 send successfully\n");
   }else{
       printf("Messages of Task 0 send failed\n");
   }
-
-  for(int j = 0; j < 65; j++)
-  {
-//      rtems_test_busy_cpu_usage(0, 1000000);  //busy for 90000 ns
-      my_delay(1);
-      printf("&");
-  }
 }
 
-void c_servant_1( pspm_smp_message * msg )
+void accActuator(pspm_smp_message *msg)
+{
+  /* Do nothing */
+}
+
+
+
+
+
+
+/**************************/
+/*     Throttle Task      */
+/**************************/
+
+
+void throttleSensor(pspm_smp_message *msg)
+{
+  int i;
+  uint32_t   *data_array;
+
+  data_array = (uint32_t *)msg->address;
+
+  data_array[0] = 11;
+  data_array[1] = 12;
+
+  /* Sum the message data, and send the result */
+  data_array[0] += data_array[1];
+  msg->size = 1;
+
+  printf("Task Throttle obtains input: including %d messages\n", msg->size);
+}
+
+void throttleController( pspm_smp_message * msg )
 {
   int i;
   uint32_t   *data_array;
   pspm_smp_message message;
   pspm_status_code status;
-  data_array = (uint32_t *)msg->address;
+  uint32_t * data_receive;
+  uint32_t  data_port;
 
-  /* Initialize a local message, whose data can be used global */
+  data_array = (uint32_t *)msg->address;
   pspm_smp_message_initialize(&message);
 
-  /* Obtaining message from IN_QUEUE and multiple 100 */
+  printf("C-Servant of Throttle Task runs\n");
+
   for(i = 0; i < msg->size; ++i){
-    data_array[i] *= 100;
+      data_array[i] *=100;
   }
 
-  /* Obtaining message from COMP_QUEUE */
   while(1){
       status = pspm_smp_message_queue_receive(&message);
       if(UNSATISFIED == status){
-          printf("Task 1 has no message received\n");
+          printf("Task controller has no message received\n");
           break;
       }
-      uint32_t * data_receive;
       data_receive = (uint32_t *)message.address;
 
-      printf("Task 1 receives messages, and the sender is %d\n", message.sender);
+      printf("Task controller receives messages from task %d\n", message.sender);
 
-      /* Message from C-Servant 0 has two elements */
-      if( message.sender == 0 ){
-          for(i = 0; i < msg->size; ++i){
-              data_array[i] = data_array[i] * data_receive[0] - data_receive[1];
-          }
+      /* Obtain the newest message data;
+       * otherwise, the data_port variable have the latest message data already
+       * */
+      switch(message.sender){
+        case 0:
+          data_port = data_receive[0];
+          printf("Message updated from Accelerator Task\n");
+          break;
+        default:
+          printf("Wrong message from %d\n", message.sender);
       }
   }
 
-  for(int j = 0; j < 25; j++)
-  {
-//      rtems_test_busy_cpu_usage(0, 1000000);  //busy for 90000 ns
-      my_delay(1);
-      printf("@");
+  /* message data processing */
+  for(i = 0; i < msg->size; ++i){
+      data_array[i] += data_port;
   }
 }
 
-
-void o_servant_0(pspm_smp_message *msg)
+void throttleActuator(pspm_smp_message *msg)
 {
   int i;
   uint32_t   *data_array;
   data_array = (uint32_t *)msg->address;
 
-  printf("Task 0 output: including %d messages\n",msg->size);
+  printf("Task 1 output %d messages: ",msg->size);
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
 }
 
-void o_servant_1(pspm_smp_message * msg)
+
+
+/**************************/
+/*  Base Fuel Mass Task   */
+/**************************/
+
+
+void baseFMSensor(pspm_smp_message *msg)
+{
+  int i;
+  uint32_t   *data_array;
+
+  data_array = (uint32_t *)msg->address;
+
+  data_array[0] = 11;
+
+  msg->size = 1;
+
+  printf("Task Base Fuel Mask obtains input: including %d messages\n", msg->size);
+}
+
+void baseFMController( pspm_smp_message * msg )
+{
+  int i;
+  uint32_t   *data_array;
+  pspm_status_code status;
+
+  data_array = (uint32_t *)msg->address;
+
+  printf("C-Servant of Base Fuel Mass Task runs\n");
+
+  for(i = 0; i < msg->size; ++i){
+      data_array[i] *=100;
+  }
+
+  /* send message to Transient Fuel Mass Task */
+  status = pspm_smp_message_queue_send(3, msg);
+  if(SATISFIED == status){
+      printf("Task 2 send message to task 3 successfully\n");
+  }else{
+      printf("Task 2 send message to task 3 failed\n");
+  }
+
+  /* send message to Ignition Timing Task */
+  status = pspm_smp_message_queue_send(4, msg);
+  if(SATISFIED == status){
+      printf("Task 2 send message to task 3 successfully\n");
+  }else{
+      printf("Task 2 send message to task 3 failed\n");
+  }
+
+}
+
+void baseFMActuator(pspm_smp_message *msg)
+{
+  /* Do nothing */
+}
+
+
+
+/****************************************************/
+/* Transient Fuel Mass Task and Total Fuel Mass Task*/
+/****************************************************/
+
+
+void transFMSensor(pspm_smp_message *msg)
+{
+  /* Do Nothing */
+  int i;
+  uint32_t   *data_array;
+  data_array = (uint32_t *)msg->address;
+
+  for(i = 0; i < MESSAGE_DATA_LENGTH; ++i ){
+    data_array[i] = 0;
+  }
+  msg->size = 0;
+}
+
+void transFMController( pspm_smp_message * msg )
+{
+  int i;
+  uint32_t   *data_array;
+  pspm_status_code status;
+  pspm_smp_message message;
+  uint32_t * data_receive;
+  uint32_t  data_port;
+
+  data_array = (uint32_t *)msg->address;
+  pspm_smp_message_initialize(&message);
+
+  printf("C-Servant of Transient Fuel Mass Task runs\n");
+
+  while(1){
+      status = pspm_smp_message_queue_receive(&message);
+      if(UNSATISFIED == status){
+          printf("Task controller has no message received\n");
+          break;
+      }
+      data_receive = (uint32_t *)message.address;
+
+      printf("Task controller receives messages from task %d\n", message.sender);
+
+      /* Obtain the newest message data;
+       * otherwise, the data_port variable have the latest message data already
+       * */
+      switch(message.sender){
+        case 2:
+          data_port = data_receive[0];
+          printf("Message updated from Base Fuel Mass Task\n");
+          break;
+        default:
+          printf("Wrong message from %d\n", message.sender);
+      }
+  }
+
+  /* message data processing */
+  for(i = 0; i < msg->size; ++i){
+      data_array[0] += data_port;
+  }
+
+}
+
+void inJectionTimeActuator(pspm_smp_message *msg)
 {
   int i;
   uint32_t   *data_array;
   data_array = (uint32_t *)msg->address;
 
-  printf("Task 1 output: including %d messages\n",msg->size);
+  printf("Task 3 output %d messages: ",msg->size);
+  for( i = 0; i < msg->size; ++i){
+    printf("%u\t",  data_array[i]);
+  }
+}
+
+/****************************************************/
+/*            Ignition Timing Task                  */
+/****************************************************/
+
+
+void ignitionSensor(pspm_smp_message *msg)
+{
+  /* Do Nothing */
+  int i;
+  uint32_t   *data_array;
+  data_array = (uint32_t *)msg->address;
+
+  for(i = 0; i < MESSAGE_DATA_LENGTH; ++i ){
+    data_array[i] = 0;
+  }
+  msg->size = 0;
+}
+
+void ignitionController( pspm_smp_message * msg )
+{
+  int i;
+  uint32_t   *data_array;
+  pspm_status_code status;
+  pspm_smp_message message;
+  uint32_t * data_receive;
+  uint32_t  data_port;
+
+  data_array = (uint32_t *)msg->address;
+  pspm_smp_message_initialize(&message);
+
+  printf("C-Servant of Ignition Timing Task runs\n");
+
+  while(1){
+      status = pspm_smp_message_queue_receive(&message);
+      if(UNSATISFIED == status){
+          printf("Task controller has no message received\n");
+          break;
+      }
+      data_receive = (uint32_t *)message.address;
+
+      printf("Task controller receives messages from task %d\n", message.sender);
+
+      /* Obtain the newest message data;
+       * otherwise, the data_port variable have the latest message data already
+       * */
+      switch(message.sender){
+        case 2:
+          data_port = data_receive[0];
+          printf("Message updated from Base Fuel Mass Task\n");
+          break;
+        default:
+          printf("Wrong message from %d\n", message.sender);
+      }
+  }
+
+  /* message data processing */
+  data_array[0] += data_port;
+  msg->size = 1;
+
+}
+
+void ignitionActuator(pspm_smp_message *msg)
+{
+  int i;
+  uint32_t   *data_array;
+  data_array = (uint32_t *)msg->address;
+
+  printf("Task 4 output %d messages: ",msg->size);
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
