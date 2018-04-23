@@ -217,7 +217,9 @@ void _Scheduler_EDF_SMP_Tick(
            */
           uint64_t pd2prio = _Scheduler_EDF_SMP_priority_map(edf_smp_node->task_node->utility, edf_smp_node->release_time + subtask_node->d * pspm_smp_task_manager.quantum_length, subtask_node->b, subtask_node->g);
           _Scheduler_EDF_SMP_change_priority(executing, pd2prio);
+#ifdef PSPM_DEBUG
           printf("\n============================================================t%d-%d quantum finished\n", edf_smp_node->task_node->id, subtask_node->subtask_no - 1);
+#endif
 
           /*
            *  A yield performs the ready chain mechanics needed when

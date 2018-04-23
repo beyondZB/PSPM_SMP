@@ -250,9 +250,13 @@ void _in_servant_routine(rtems_id null_id, void * task_node)
   } else {
     message.address = node->in_message;
     message.size = 0;
+#ifdef PSPM_DEBUG
     printf("\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< t%d i-servant\n", node->id);
+#endif
     runnable( &message);
+#ifdef PSPM_DEBUG
     printf("\n<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n", node->id);
+#endif
     message.sender = node->id;
     _pspm_smp_message_queue_IsC( node->id, &message);
   }
@@ -286,9 +290,13 @@ void _out_servant_routine( rtems_id null_id, void * task_node)
     if(RTEMS_UNSATISFIED == status){
         printf("No message should output in task %d\n", node->id);
     }else{
+#ifdef PSPM_DEBUG
         printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>   t%d o-servant\n", node->id);
+#endif
         runnable( &message);
+#ifdef PSPM_DEBUG
         printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\n\n", node->id);
+#endif
     }
   }
 }
@@ -386,11 +394,14 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
     status = _pspm_smp_message_queue_CrI(id, &msg);
 
     if(RTEMS_UNSATISFIED == status) continue;
-
+#ifdef PSPM_DEBUG
     printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++t%d c-servant start\n\n", id);
     printf("C-Servant in Task %d has receive message from I-Servant\n", id);
+#endif
     runnable(&msg);
+#ifdef PSPM_DEBUG
     printf("\n-------------------------------------------------------------------------t%d c-servant finished\n\n", id);
+#endif
     /* set the message sender as current task */
     msg.sender = id;
     /* Send message to OUT_QUEUE of current task */
@@ -807,8 +818,6 @@ rtems_status_code _pspm_smp_message_queue_OrC( tid_t id, pspm_smp_message *msg)
 #define CONFIGURE_MAXIMUM_TIMERS 2*TASK_NUM_MAX
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 3*TASK_NUM_MAX
 
-/* 1000 us == 1 tick, not used here */
-#define CONFIGURE_MICROSECONDS_PER_TICK 1000
 
 /* 1 timeslice == 50 ticks */
 #define CONFIGURE_TICKS_PER_TIMESLICE QUANTUM_LENGTH

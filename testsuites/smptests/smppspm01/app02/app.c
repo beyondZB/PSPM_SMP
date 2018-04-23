@@ -143,6 +143,7 @@ void throttleActuator(pspm_smp_message *msg)
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
+  printf("\n");
 }
 
 
@@ -277,6 +278,7 @@ void inJectionTimeActuator(pspm_smp_message *msg)
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
+  printf("\n");
 }
 
 /****************************************************/
@@ -350,5 +352,6 @@ void ignitionActuator(pspm_smp_message *msg)
   for( i = 0; i < msg->size; ++i){
     printf("%u\t",  data_array[i]);
   }
+  printf("\n");
 }
 
