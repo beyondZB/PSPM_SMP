@@ -7,7 +7,7 @@
 #ifndef __APP_H__
 #define __APP_H__
 
-#include "pspm.h"
+#include "../pspm.h"
 
 /* Used in main.c */
 #define PERIOD_TASK_NUM 5
