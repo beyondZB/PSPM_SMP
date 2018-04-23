@@ -179,24 +179,16 @@ rtems_id _get_message_queue(tid_t id, Queue_type type)
 
 
 /* Math function ceil and floor implementation */
-static double myfloor(double num)
+static uint32_t myfloor(double num)
 {
-  if(num < 0){
-    int64_t result = (int64_t)num;
-    return (double)(result-1);
-  }else{
-    return (double)(int64_t)num;
-  }
-
+    return (int32_t)num;
 }
-static uint64_t myceil(float num)
+static uint32_t myceil(double num)
 {
-  if(num < 0){
-    return (double)(int64_t)num;
-  }else{
-    int64_t result = (int64_t)num;
-    return (double)(result+1);
-  }
+    int32_t result = (int32_t)num;
+    if(num == (double)result)
+      return result;
+    return result + 1;
 }
 
 
@@ -456,13 +448,10 @@ static void _pd2_subtasks_create(
     p_new_snode->r = myfloor((double)(i - 1) / p_tnode->utility);
     p_new_snode->d = myceil((double)i / p_tnode->utility);
 
-    if(p_tnode->utility < 0.5)
-        p_new_snode->b = 0;
-    else{
-        p_new_snode->b = myceil((double)i / p_tnode->utility) - myfloor((double)i / p_tnode->utility);
-        /* the b(Ti) of the last subtask should be 0 */
-        p_new_snode->b = (i == p_tnode->quant_wcet) ? 0 : p_new_snode->b;
-    }
+    p_new_snode->b = myceil((double)i * p_tnode->quant_period / p_tnode->quant_wcet) -
+                        myfloor((double)i* p_tnode->quant_period / p_tnode->quant_wcet);
+    /* the b(Ti) of the last subtask should be 0 */
+    p_new_snode->b = (i == p_tnode->quant_wcet) ? 0 : p_new_snode->b;
 
     _group_deadline_update(p_tnode->utility, p_new_snode, &min_group_deadline);
 
@@ -499,7 +488,7 @@ Task_Node_t  pspm_smp_task_create(
     /*Note that : the quantum length is presented in number of ticks */
     p_tnode->quant_wcet =  myceil((double)p_tnode->wcet / pspm_smp_task_manager.quantum_length);
     p_tnode->quant_period =  myceil((double)p_tnode->period / pspm_smp_task_manager.quantum_length);
-    p_tnode->utility = (double)p_tnode->quant_wcet / p_tnode->quant_period;
+    p_tnode->utility = (double)p_tnode->wcet / p_tnode->period;
 
     /* calculate the PD2 relative timing information for scheduling subtasks */
     _pd2_subtasks_create(p_tnode);

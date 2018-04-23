@@ -1,6 +1,6 @@
 rtems_tests_PROGRAMS = smppspm01
 
-APPDIR = app02
+APPDIR = app01
 APPFILE = ./${APPDIR}/app.c
 APPFILE += ./${APPDIR}/app.h
 APPFILE += ./${APPDIR}/main.c

@@ -72,8 +72,8 @@ void c_servant_0( pspm_smp_message * msg )
 
   for(int j = 0; j < 65; j++)
   {
-//      rtems_test_busy_cpu_usage(0, 1000000);  //busy for 90000 ns
-      my_delay(1);
+      rtems_test_busy_cpu_usage(0, 1e6);  //busy for 90000 ns
+//      my_delay(1);
       printf("&");
   }
 }
@@ -114,10 +114,10 @@ void c_servant_1( pspm_smp_message * msg )
       }
   }
 
-  for(int j = 0; j < 25; j++)
+  for(int j = 0; j < 50; j++)
   {
-//      rtems_test_busy_cpu_usage(0, 1000000);  //busy for 90000 ns
-      my_delay(1);
+      rtems_test_busy_cpu_usage(0, 1e6);  //busy for 90000 ns
+//      my_delay(1);
       printf("@");
   }
 }
