@@ -480,8 +480,8 @@ Task_Node_t  pspm_smp_task_create(
     /* Initialize the elements in task node */
     p_tnode->id = task_id;
     p_tnode->type = task_type;
-    p_tnode->wcet = RTEMS_MILLISECONDS_TO_TICKS(wcet);
-    p_tnode->period = RTEMS_MILLISECONDS_TO_TICKS(period);
+    p_tnode->wcet = RTEMS_MICROSECONDS_TO_TICKS(wcet);
+    p_tnode->period = RTEMS_MICROSECONDS_TO_TICKS(period);
     p_tnode->in_message = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
     p_tnode->out_message = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
 
@@ -808,7 +808,7 @@ rtems_status_code _pspm_smp_message_queue_OrC( tid_t id, pspm_smp_message *msg)
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 3*TASK_NUM_MAX
 
 /* 1000 us == 1 tick, not used here */
-#define CONFIGURE_MICROSECONDS_PER_TICK 1000
+#define CONFIGURE_MICROSECONDS_PER_TICK 100
 
 /* 1 timeslice == 50 ticks */
 #define CONFIGURE_TICKS_PER_TIMESLICE QUANTUM_LENGTH

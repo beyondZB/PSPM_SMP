@@ -1,4 +1,4 @@
-/* 
+/*
  *  COPYRIGHT (c) 1989-2011.
  *  On-Line Applications Research Corporation (OAR).
  *
@@ -25,7 +25,7 @@ rtems_task Test_task(
 #define CONFIGURE_APPLICATION_DOES_NOT_NEED_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_SIMPLE_CONSOLE_DRIVER
 
-#define CONFIGURE_MAXIMUM_PROCESSORS   4 
+#define CONFIGURE_MAXIMUM_PROCESSORS   4
 
 #define CONFIGURE_MAXIMUM_TASKS            \
     (1 + CONFIGURE_MAXIMUM_PROCESSORS)
@@ -57,7 +57,7 @@ typedef struct {
 
 #define           LOG_SIZE   20
 
-TEST_EXTERN rtems_id   Semaphore;      /* synchronisation semaphore */ 
+TEST_EXTERN rtems_id   Semaphore;      /* synchronisation semaphore */
 TEST_EXTERN Log_t      Log[LOG_SIZE];  /* A log of locks/unlocks */
 TEST_EXTERN volatile uint32_t   Log_index;      /* Index into log */
 
