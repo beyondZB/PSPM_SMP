@@ -491,8 +491,8 @@ Task_Node_t  pspm_smp_task_create(
     /* Initialize the elements in task node */
     p_tnode->id = task_id;
     p_tnode->type = task_type;
-    p_tnode->wcet = RTEMS_MILLISECONDS_TO_TICKS(wcet);
-    p_tnode->period = RTEMS_MILLISECONDS_TO_TICKS(period);
+    p_tnode->wcet = RTEMS_MICROSECONDS_TO_TICKS(wcet);
+    p_tnode->period = RTEMS_MICROSECONDS_TO_TICKS(period);
     p_tnode->in_message = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
     p_tnode->out_message = (void *)malloc(MESSAGE_DATA_LENGTH * sizeof(uint32_t));
 
