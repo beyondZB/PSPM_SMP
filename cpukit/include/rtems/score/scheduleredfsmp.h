@@ -82,6 +82,7 @@ typedef struct _Task_Node{
   uint32_t c_queue_id; /* id of queue for communicating with other tasks, used by C-servant */
   uint32_t o_queue_id; /* id of queue for passing message between C and O servant in the same task */
   Chain_Control Subtask_Node_queue; /* chain for subtasks */
+  uint32_t is_pspm_node;
 }Task_Node;
 
 /*

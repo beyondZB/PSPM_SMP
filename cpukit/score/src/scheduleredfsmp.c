@@ -27,16 +27,18 @@
  */
 PSPM_SMP pspm_smp_task_manager;
 uint64_t start, end, total;
-uint64_t count;
+uint64_t count=0;
 
 void pspm_smp_start_count()
 {
   start = rtems_clock_get_uptime_nanoseconds();
+//  printf("s: %llu\t%d\t%llu\n", start, count, _Thread_Executing);
 }
 
 void pspm_smp_end_count()
 {
   end = rtems_clock_get_uptime_nanoseconds();
+//  printf("e: %llu\t%d\t%llu\n", end, count, _Thread_Executing);
   total += end - start;
   count++;
 }
@@ -180,6 +182,7 @@ void _Scheduler_EDF_SMP_Tick(
 {
   (void) scheduler;
 
+  pspm_smp_start_count();
   /*
    *  If the thread is not preemptible or is not ready, then
    *  just return.
@@ -227,7 +230,7 @@ void _Scheduler_EDF_SMP_Tick(
            *  currently executing thread is placed at the rear of the
            *  FIFO for this priority and a new heir is selected.
            */
-          _Thread_Yield( executing );
+          //_Thread_Yield( executing );
           executing->cpu_time_budget =
               rtems_configuration_get_ticks_per_timeslice();
       }
@@ -235,8 +238,8 @@ void _Scheduler_EDF_SMP_Tick(
        * if time_slice is not finished.
        * the task priority should be set as ceil priority.
        */
-      else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
-          _Scheduler_EDF_SMP_change_priority(executing, 20);
+//      else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
+//          _Scheduler_EDF_SMP_change_priority(executing, 20);
       break;
 
     #if defined(RTEMS_SCORE_THREAD_ENABLE_SCHEDULER_CALLOUT)
@@ -246,6 +249,7 @@ void _Scheduler_EDF_SMP_Tick(
 	break;
     #endif
   }
+  pspm_smp_end_count();
 }
 
 /*

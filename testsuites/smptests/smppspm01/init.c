@@ -154,6 +154,7 @@ rtems_task Init(
   rtems_cpu_usage_report_with_plugin(&rtems_test_printer);
   rtems_rate_monotonic_report_statistics_with_plugin(&rtems_test_printer);
 
+  pspm_smp_print_count();
   /* APP finishes */
   rtems_sucess();
 }

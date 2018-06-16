@@ -478,6 +478,7 @@ Task_Node_t  pspm_smp_task_create(
     /* Allocate memory for the task node */
     Task_Node *p_tnode = (Task_Node *)malloc(sizeof(Task_Node));
     /* Initialize the elements in task node */
+    p_tnode->is_pspm_node = 12345;
     p_tnode->id = task_id;
     p_tnode->type = task_type;
     p_tnode->wcet = RTEMS_MICROSECONDS_TO_TICKS(wcet);
