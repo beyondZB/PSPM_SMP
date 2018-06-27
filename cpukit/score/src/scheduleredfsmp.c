@@ -237,9 +237,9 @@ void _Scheduler_EDF_SMP_Tick(
        */
       else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
       {
-        pspm_smp_start_count();
+//        pspm_smp_start_count();
         _Scheduler_EDF_SMP_change_priority(executing, 20);
-        pspm_smp_end_count();
+//        pspm_smp_end_count();
       }
       break;
 

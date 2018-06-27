@@ -22,6 +22,7 @@
 #include <rtems/score/percpu.h>
 #include <rtems/score/smpimpl.h>
 #include <rtems/score/watchdogimpl.h>
+#include <rtems/score/scheduleredfsmp.h>
 
 #ifdef Clock_driver_nanoseconds_since_last_tick
 #error "Update driver to use the timecounter instead of nanoseconds extension"
@@ -134,6 +135,7 @@ rtems_isr Clock_isr(
 )
 {
 #endif
+  pspm_smp_start_count();
   /* added by wanbo, This is the time interrupts function for smp rtems */
   /*
    *  Accurate count of ISRs
@@ -191,6 +193,7 @@ rtems_isr Clock_isr(
       Clock_driver_timecounter_tick();
     #endif
   #endif
+      pspm_smp_end_count();
 }
 
 #ifdef Clock_driver_support_shutdown_hardware
