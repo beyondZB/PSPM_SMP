@@ -180,6 +180,7 @@ void _Scheduler_EDF_SMP_Tick(
   Thread_Control          *executing
 )
 {
+//  pspm_smp_start_count();
   (void) scheduler;
 
   /*
@@ -196,7 +197,7 @@ void _Scheduler_EDF_SMP_Tick(
   /*
    *  The cpu budget algorithm determines what happens next.
    */
-
+  Scheduler_EDF_SMP_Node * edf_smp_node = _get_Scheduler_EDF_SMP_Node(executing);
   switch ( executing->budget_algorithm ) {
     case THREAD_CPU_BUDGET_ALGORITHM_NONE:
       break;
@@ -209,7 +210,7 @@ void _Scheduler_EDF_SMP_Tick(
        * if time_slice is finished.
        */
       if ( (int)(--executing->cpu_time_budget) <= 0 ) {
-          Scheduler_EDF_SMP_Node * edf_smp_node = _get_Scheduler_EDF_SMP_Node(executing);
+          edf_smp_node->task_node->is_preemptable = true;
           Scheduler_SMP_Node *smp_node = (Scheduler_SMP_Node *)edf_smp_node;
           Subtask_Node * subtask_node = _Scheduler_EDF_SMP_Subtask_Chain_current(edf_smp_node);
           /*
@@ -239,9 +240,8 @@ void _Scheduler_EDF_SMP_Tick(
        */
       else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
       {
-        pspm_smp_start_count();
-        _Scheduler_EDF_SMP_change_priority(executing, 20);
-        pspm_smp_end_count();
+//        _Scheduler_EDF_SMP_change_priority(executing, 20);
+        edf_smp_node->task_node->is_preemptable = false;
       }
       break;
 
@@ -252,6 +252,7 @@ void _Scheduler_EDF_SMP_Tick(
 	break;
     #endif
   }
+//  pspm_smp_end_count();
 }
 
 /*

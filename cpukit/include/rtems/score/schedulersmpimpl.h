@@ -367,12 +367,11 @@ static inline bool _Scheduler_SMP_Priority_less_equal(
   node_next = (const Scheduler_SMP_Node *) next;
   pspm_next = (const Scheduler_EDF_SMP_Node *) next;
 
-//  if(pspm_next->task_node->is_pspm_node != 12345 ||
-//      node_next->Base.owner->cpu_time_budget ==
-//      rtems_configuration_get_ticks_per_timeslice())
+  if(pspm_next->task_node->is_pspm_node == 12345 &&
+      pspm_next->task_node->is_preemptable == false)
+    return false;
+  else
     return *priority_to_insert <= node_next->priority;
-//  else
-//    return false;
 }
 
 static inline Scheduler_SMP_Context *_Scheduler_SMP_Get_self(

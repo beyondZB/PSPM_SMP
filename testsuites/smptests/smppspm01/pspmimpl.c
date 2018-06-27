@@ -1,5 +1,5 @@
 /*
- * PSPM implementaion file
+   uint8_t iseemptable;* PSPM implementaion file
  * This file include the pspm.h file
  * For implementing pspm programming interfaces
  *
@@ -385,7 +385,8 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
     /* Receive message from IN_QUEUE of current task */
     status = _pspm_smp_message_queue_CrI(id, &msg);
 
-    if(RTEMS_UNSATISFIED == status) continue;
+// for test, the comment should be removed!!
+//    if(RTEMS_UNSATISFIED == status) continue;
 #ifdef PSPM_DEBUG
     printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++t%d c-servant start\n\n", id);
     printf("C-Servant in Task %d has receive message from I-Servant\n", id);
@@ -479,6 +480,7 @@ Task_Node_t  pspm_smp_task_create(
     Task_Node *p_tnode = (Task_Node *)malloc(sizeof(Task_Node));
     /* Initialize the elements in task node */
     p_tnode->is_pspm_node = 12345;
+    p_tnode->is_preemptable = true;
     p_tnode->id = task_id;
     p_tnode->type = task_type;
     p_tnode->wcet = RTEMS_MICROSECONDS_TO_TICKS(wcet);

@@ -16,35 +16,35 @@ static void my_delay(int ticks)
 
 void i_servant_0(pspm_smp_message *msg)
 {
-  int i;
-  uint32_t   *data_array;
-
-  data_array = (uint32_t *)msg->address;
-
-  data_array[0] = 10;
-  data_array[1] = 20;
-  msg->size = 2;
-  printf("Task 0 obtains input: including %d messages\n", msg->size);
-  /* the message sender will be setted automatically by the runtime */
-  for( i = 0; i < msg->size; ++i){
-    printf("%u\t",  data_array[i]);
-  }
+//  int i;
+//  uint32_t   *data_array;
+//
+//  data_array = (uint32_t *)msg->address;
+//
+//  data_array[0] = 10;
+//  data_array[1] = 20;
+//  msg->size = 2;
+//  printf("Task 0 obtains input: including %d messages\n", msg->size);
+//  /* the message sender will be setted automatically by the runtime */
+//  for( i = 0; i < msg->size; ++i){
+//    printf("%u\t",  data_array[i]);
+//  }
 }
 
 void i_servant_1(pspm_smp_message *msg)
 {
-  int i;
-  uint32_t   *data_array;
-
-  data_array = (uint32_t *)msg->address;
-
-  data_array[0] = 100;
-  msg->size = 1;
-  printf("Task 1 obtains input: including %d messages\n", msg->size);
-  /* the message sender will be setted automatically by the runtime */
-  for( i = 0; i < msg->size; ++i){
-    printf("%u\t", data_array[i]);
-  }
+//  int i;
+//  uint32_t   *data_array;
+//
+//  data_array = (uint32_t *)msg->address;
+//
+//  data_array[0] = 100;
+//  msg->size = 1;
+//  printf("Task 1 obtains input: including %d messages\n", msg->size);
+//  /* the message sender will be setted automatically by the runtime */
+//  for( i = 0; i < msg->size; ++i){
+//    printf("%u\t", data_array[i]);
+//  }
 }
 
 void c_servant_0( pspm_smp_message * msg )
