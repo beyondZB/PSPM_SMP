@@ -182,7 +182,6 @@ void _Scheduler_EDF_SMP_Tick(
 {
   (void) scheduler;
 
-  pspm_smp_start_count();
   /*
    *  If the thread is not preemptible or is not ready, then
    *  just return.
@@ -238,8 +237,12 @@ void _Scheduler_EDF_SMP_Tick(
        * if time_slice is not finished.
        * the task priority should be set as ceil priority.
        */
-//      else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
-//          _Scheduler_EDF_SMP_change_priority(executing, 20);
+      else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
+      {
+        pspm_smp_start_count();
+        _Scheduler_EDF_SMP_change_priority(executing, 20);
+        pspm_smp_end_count();
+      }
       break;
 
     #if defined(RTEMS_SCORE_THREAD_ENABLE_SCHEDULER_CALLOUT)
@@ -249,7 +252,6 @@ void _Scheduler_EDF_SMP_Tick(
 	break;
     #endif
   }
-  pspm_smp_end_count();
 }
 
 /*
