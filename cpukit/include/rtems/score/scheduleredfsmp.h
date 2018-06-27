@@ -205,9 +205,9 @@ typedef struct {
     _Scheduler_EDF_SMP_Remove_processor, \
     _Scheduler_EDF_SMP_Node_initialize, \
     _Scheduler_default_Node_destroy, \
-    _Scheduler_EDF_SMP_Rlease_job, \
+    _Scheduler_EDF_Release_job, \
     _Scheduler_EDF_Cancel_job, \
-    _Scheduler_EDF_SMP_Tick, \
+    _Scheduler_default_Tick, \
     _Scheduler_EDF_SMP_Start_idle, \
     _Scheduler_EDF_SMP_Set_affinity \
   }

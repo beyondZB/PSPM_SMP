@@ -23,6 +23,7 @@
 #include <rtems/score/threadimpl.h>
 #include <rtems/score/smp.h>
 #include <rtems/config.h>
+#include <rtems/score/scheduleredfsmp.h>
 
 void _Scheduler_default_Tick(
   const Scheduler_Control *scheduler,
@@ -55,6 +56,7 @@ void _Scheduler_default_Tick(
       case THREAD_CPU_BUDGET_ALGORITHM_EXHAUST_TIMESLICE:
     #endif
       if ( (int)(--executing->cpu_time_budget) <= 0 ) {
+        pspm_smp_start_count();
 
         /*
          *  A yield performs the ready chain mechanics needed when
@@ -67,6 +69,7 @@ void _Scheduler_default_Tick(
         _Thread_Yield( executing );
         executing->cpu_time_budget =
           rtems_configuration_get_ticks_per_timeslice();
+        pspm_smp_end_count();
       }
       break;
 
