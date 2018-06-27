@@ -385,8 +385,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
     /* Receive message from IN_QUEUE of current task */
     status = _pspm_smp_message_queue_CrI(id, &msg);
 
-// for test, the comment should be removed!!
-//    if(RTEMS_UNSATISFIED == status) continue;
+    if(RTEMS_UNSATISFIED == status) continue;
 #ifdef PSPM_DEBUG
     printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++t%d c-servant start\n\n", id);
     printf("C-Servant in Task %d has receive message from I-Servant\n", id);
