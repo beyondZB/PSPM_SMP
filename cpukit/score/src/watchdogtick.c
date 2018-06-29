@@ -53,6 +53,7 @@ void _Watchdog_Do_tickle(
 
 void _Watchdog_Tick( Per_CPU_Control *cpu )
 {
+  pspm_smp_start_count();
   ISR_lock_Context  lock_context;
   Watchdog_Header  *header;
   Watchdog_Control *first;
@@ -115,4 +116,5 @@ void _Watchdog_Tick( Per_CPU_Control *cpu )
 
 
   _Scheduler_Tick( cpu );
+  pspm_smp_end_count();
 }
