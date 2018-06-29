@@ -54,7 +54,7 @@ void _Watchdog_Do_tickle(
 void _Watchdog_Tick( Per_CPU_Control *cpu )
 {
 #include <rtems/score/scheduleredfsmp.h>
-  pspm_smp_start_count();
+//  pspm_smp_start_count();
   ISR_lock_Context  lock_context;
   Watchdog_Header  *header;
   Watchdog_Control *first;
@@ -116,5 +116,5 @@ void _Watchdog_Tick( Per_CPU_Control *cpu )
   _ISR_lock_Release_and_ISR_enable( &cpu->Watchdog.Lock, &lock_context );
 
   _Scheduler_Tick( cpu );
-  pspm_smp_end_count();
+//  pspm_smp_end_count();
 }
