@@ -21,7 +21,7 @@
 
 
 /* if define PSPM_DEBUG lots of debug information will be printed. */
-//#define PSPM_DEBUG
+#define PSPM_DEBUG
 
 /* 1000 us == 1 tick, not used here */
 #define CONFIGURE_MICROSECONDS_PER_TICK 1000
