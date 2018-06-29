@@ -63,12 +63,12 @@ void c_servant_0( pspm_smp_message * msg )
   }
 
   /* Send the updated message to the COMP_QUEUE of task 1 */
-  status = pspm_smp_message_queue_send(1, msg);
-  if(SATISFIED == status){
-      printf("Messages of Task 0 send successfully\n");
-  }else{
-      printf("Messages of Task 0 send failed\n");
-  }
+//  status = pspm_smp_message_queue_send(1, msg);
+//  if(SATISFIED == status){
+//      printf("Messages of Task 0 send successfully\n");
+//  }else{
+//      printf("Messages of Task 0 send failed\n");
+//  }
 
   for(int j = 0; j < 65; j++)
   {
@@ -94,25 +94,25 @@ void c_servant_1( pspm_smp_message * msg )
     data_array[i] *= 100;
   }
 
-  /* Obtaining message from COMP_QUEUE */
-  while(1){
-      status = pspm_smp_message_queue_receive(&message);
-      if(UNSATISFIED == status){
-          printf("Task 1 has no message received\n");
-          break;
-      }
-      uint32_t * data_receive;
-      data_receive = (uint32_t *)message.address;
-
-      printf("Task 1 receives messages, and the sender is %d\n", message.sender);
-
-      /* Message from C-Servant 0 has two elements */
-      if( message.sender == 0 ){
-          for(i = 0; i < msg->size; ++i){
-              data_array[i] = data_array[i] * data_receive[0] - data_receive[1];
-          }
-      }
-  }
+//  /* Obtaining message from COMP_QUEUE */
+//  while(1){
+//      status = pspm_smp_message_queue_receive(&message);
+//      if(UNSATISFIED == status){
+//          printf("Task 1 has no message received\n");
+//          break;
+//      }
+//      uint32_t * data_receive;
+//      data_receive = (uint32_t *)message.address;
+//
+//      printf("Task 1 receives messages, and the sender is %d\n", message.sender);
+//
+//      /* Message from C-Servant 0 has two elements */
+//      if( message.sender == 0 ){
+//          for(i = 0; i < msg->size; ++i){
+//              data_array[i] = data_array[i] * data_receive[0] - data_receive[1];
+//          }
+//      }
+//  }
 
   for(int j = 0; j < 50; j++)
   {
