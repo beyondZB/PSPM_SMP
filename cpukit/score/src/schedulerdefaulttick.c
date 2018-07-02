@@ -30,6 +30,7 @@ void _Scheduler_default_Tick(
   Thread_Control          *executing
 )
 {
+  pspm_smp_start_count();
   (void) scheduler;
 
   /*
@@ -78,4 +79,5 @@ void _Scheduler_default_Tick(
 	break;
     #endif
   }
+  pspm_smp_end_count();
 }
