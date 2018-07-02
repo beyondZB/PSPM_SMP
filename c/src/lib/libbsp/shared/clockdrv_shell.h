@@ -135,65 +135,65 @@ rtems_isr Clock_isr(
 )
 {
 #endif
-//  pspm_smp_start_count();
+  pspm_smp_start_count();
   /* added by wanbo, This is the time interrupts function for smp rtems */
   /*
    *  Accurate count of ISRs
    */
   Clock_driver_ticks += 1;
 
-  #if CLOCK_DRIVER_USE_FAST_IDLE
-    {
-      struct timecounter *tc = _Timecounter;
-      uint64_t us_per_tick = rtems_configuration_get_microseconds_per_tick();
-      uint32_t interval = (uint32_t)
-        ((tc->tc_frequency * us_per_tick) / 1000000);
+#if CLOCK_DRIVER_USE_FAST_IDLE
+  {
+    struct timecounter *tc = _Timecounter;
+    uint64_t us_per_tick = rtems_configuration_get_microseconds_per_tick();
+    uint32_t interval = (uint32_t)
+      ((tc->tc_frequency * us_per_tick) / 1000000);
 
-      Clock_driver_timecounter_tick();
+    Clock_driver_timecounter_tick();
 
-      if (!rtems_configuration_is_smp_enabled()) {
-        while (
+    if (!rtems_configuration_is_smp_enabled()) {
+      while (
           _Thread_Heir == _Thread_Executing && _Thread_Executing->is_idle
-        ) {
-          ISR_lock_Context lock_context;
+          ) {
+        ISR_lock_Context lock_context;
 
-          _Timecounter_Acquire(&lock_context);
-          _Timecounter_Tick_simple(
+        _Timecounter_Acquire(&lock_context);
+        _Timecounter_Tick_simple(
             interval,
             (*tc->tc_get_timecount)(tc),
             &lock_context
-          );
-        }
+            );
       }
-
-      Clock_driver_support_at_tick();
     }
-  #else
-    /*
-     *  Do the hardware specific per-tick action.
-     *
-     *  The counter/timer may or may not be set to automatically reload.
-     */
+
     Clock_driver_support_at_tick();
+  }
+#else
+  /*
+   *  Do the hardware specific per-tick action.
+   *
+   *  The counter/timer may or may not be set to automatically reload.
+   */
+  Clock_driver_support_at_tick();
 
-    #if CLOCK_DRIVER_ISRS_PER_TICK
-      /*
-       *  The driver is multiple ISRs per clock tick.
-       */
-      if ( !Clock_driver_isrs ) {
-        Clock_driver_timecounter_tick();
+#if CLOCK_DRIVER_ISRS_PER_TICK
+  /*
+   *  The driver is multiple ISRs per clock tick.
+   */
+  if ( !Clock_driver_isrs ) {
+    Clock_driver_timecounter_tick();
 
-        Clock_driver_isrs = CLOCK_DRIVER_ISRS_PER_TICK;
-      }
-      Clock_driver_isrs--;
-    #else
-      /*
-       *  The driver is one ISR per clock tick.
-       */
-      Clock_driver_timecounter_tick();
-    #endif
-  #endif
-//      pspm_smp_end_count();
+    Clock_driver_isrs = CLOCK_DRIVER_ISRS_PER_TICK;
+  }
+  Clock_driver_isrs--;
+#else
+  /*
+   *  The driver is one ISR per clock tick.
+   */
+  Clock_driver_timecounter_tick();
+#endif
+#endif
+  pspm_smp_end_count();
 }
 
 #ifdef Clock_driver_support_shutdown_hardware
