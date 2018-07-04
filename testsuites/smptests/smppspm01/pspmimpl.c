@@ -356,16 +356,16 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
   directive_failed(status, "rtems_get_name");
 
   /* Creating timer for O-Servant and set the timer id of its Servant structure */
-  status = rtems_timer_create( name, &out_timer_id );
-  directive_failed(status, "rtems_timer_create");
-  pspm_smp_task_manager.Task_Node_array[id]->o_servant.id = out_timer_id;
-  rtems_timer_fire_after(out_timer_id, period, _out_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
-
-  /* Creating timer for I-Servant and set the timer id of its Servant structure */
-  status = rtems_timer_create( name, &in_timer_id );
-  directive_failed(status, "rtems_timer_create");
-  pspm_smp_task_manager.Task_Node_array[id]->i_servant.id = in_timer_id;
-  rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
+//  status = rtems_timer_create( name, &out_timer_id );
+//  directive_failed(status, "rtems_timer_create");
+//  pspm_smp_task_manager.Task_Node_array[id]->o_servant.id = out_timer_id;
+//  rtems_timer_fire_after(out_timer_id, period, _out_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
+//
+//  /* Creating timer for I-Servant and set the timer id of its Servant structure */
+//  status = rtems_timer_create( name, &in_timer_id );
+//  directive_failed(status, "rtems_timer_create");
+//  pspm_smp_task_manager.Task_Node_array[id]->i_servant.id = in_timer_id;
+//  rtems_timer_fire_after(in_timer_id, period, _in_servant_routine, pspm_smp_task_manager.Task_Node_array[id]);
 
   /******************************************************/
   /*        The creation of C-Servant                   */
@@ -383,9 +383,9 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
     directive_failed(status, "rtems_rate_monotonic_period");
 
     /* Receive message from IN_QUEUE of current task */
-    status = _pspm_smp_message_queue_CrI(id, &msg);
-
-    if(RTEMS_UNSATISFIED == status) continue;
+//    status = _pspm_smp_message_queue_CrI(id, &msg);
+//
+//    if(RTEMS_UNSATISFIED == status) continue;
 #ifdef PSPM_DEBUG
     printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++t%d c-servant start\n\n", id);
     printf("C-Servant in Task %d has receive message from I-Servant\n", id);
@@ -397,7 +397,7 @@ rtems_task _comp_servant_routine(rtems_task_argument argument)
     /* set the message sender as current task */
     msg.sender = id;
     /* Send message to OUT_QUEUE of current task */
-    _pspm_smp_message_queue_CsO(id, &msg);
+//    _pspm_smp_message_queue_CsO(id, &msg);
   }
 }/* End Out_servant */
 
