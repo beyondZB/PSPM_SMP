@@ -143,7 +143,7 @@ rtems_task Init(
   /* The time here are !!!not!!! supposed to be set to the LCM of task periods.
    * Otherwise, the Allocator Error occurs leading to no statistic results of CPU usage.
    * */
-  status = rtems_task_wake_after(10 * lcm + 10);
+  status = rtems_task_wake_after(100 * lcm + 10);
   rtems_test_assert(RTEMS_SUCCESSFUL == status);
 
   for( ; count > 0; count--){
@@ -155,7 +155,7 @@ rtems_task Init(
   rtems_rate_monotonic_report_statistics_with_plugin(&rtems_test_printer);
 
   pspm_smp_print_count();
-  /* APP finishes */
+  /* app finishes */
   rtems_sucess();
 }
 
