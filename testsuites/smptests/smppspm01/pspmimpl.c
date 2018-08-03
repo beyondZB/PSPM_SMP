@@ -819,7 +819,7 @@ rtems_status_code _pspm_smp_message_queue_OrC( tid_t id, pspm_smp_message *msg)
 //#define CONFIGURE_INITIAL_EXTENSIONS RTEMS_TEST_INITIAL_EXTENSION
 //
 //#define CONFIGURE_RTEMS_INIT_TASKS_TABLE
-#define CONFIGURE_SCHEDULER_EDF_SMP
+#define CONFIGURE_SCHEDULER_PRIORITY
 
 #include <rtems/scheduler.h>
 
