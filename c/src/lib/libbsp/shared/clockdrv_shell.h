@@ -139,7 +139,7 @@ rtems_isr Clock_isr(
   /*
    *  Accurate count of ISRs
    */
-//  pspm_smp_start_count();
+  pspm_smp_start_count();
   Clock_driver_ticks += 1;
 
   #if CLOCK_DRIVER_USE_FAST_IDLE
@@ -193,7 +193,7 @@ rtems_isr Clock_isr(
       Clock_driver_timecounter_tick();
     #endif
   #endif
-//  pspm_smp_end_count();
+  pspm_smp_end_count();
 }
 
 #ifdef Clock_driver_support_shutdown_hardware
