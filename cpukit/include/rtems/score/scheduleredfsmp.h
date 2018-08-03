@@ -20,6 +20,7 @@
 #include <rtems/score/scheduler.h>
 #include <rtems/score/scheduleredf.h>
 #include <rtems/score/schedulersmp.h>
+#include <rtems/score/overhead_measurement.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,11 +32,6 @@ extern "C" {
 /* Type of task id */
 typedef int32_t tid_t;
 /* Type of task defined in pspm.h */
-
-/* Use for obtain overheads of kernel codes */
-void pspm_smp_start_count();
-void pspm_smp_end_count();
-void pspm_smp_print_count();
 
 /**
  * Type of subtasks

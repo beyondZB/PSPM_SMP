@@ -180,7 +180,7 @@ void _Scheduler_EDF_SMP_Tick(
   Thread_Control          *executing
 )
 {
-  pspm_smp_start_count();
+//  pspm_smp_start_count();
   (void) scheduler;
 
   /*
@@ -252,7 +252,7 @@ void _Scheduler_EDF_SMP_Tick(
 	break;
     #endif
   }
-  pspm_smp_end_count();
+//  pspm_smp_end_count();
 }
 
 /*
