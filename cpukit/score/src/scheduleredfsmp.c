@@ -180,7 +180,7 @@ void _Scheduler_EDF_SMP_Tick(
 {
   (void) scheduler;
 
-  pspm_smp_start_count();
+//  pspm_smp_start_count();
   /*
    *  If the thread is not preemptible or is not ready, then
    *  just return.
@@ -248,7 +248,7 @@ void _Scheduler_EDF_SMP_Tick(
     #endif
   }
 
-  pspm_smp_end_count();
+//  pspm_smp_end_count();
 }
 
 /*
