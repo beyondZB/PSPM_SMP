@@ -517,6 +517,7 @@ RTEMS_INLINE_ROUTINE void _Scheduler_Node_destroy(
  * @param[in] queue_context The thread queue context to provide the set of
  *   threads for _Thread_Priority_update().
  */
+#include <rtems/score/overhead_measurement.h>
 RTEMS_INLINE_ROUTINE void _Scheduler_Release_job(
   Thread_Control       *the_thread,
   Priority_Node        *priority_node,
@@ -524,6 +525,7 @@ RTEMS_INLINE_ROUTINE void _Scheduler_Release_job(
   Thread_queue_Context *queue_context
 )
 {
+  pspm_smp_start_count();
   const Scheduler_Control *scheduler = _Thread_Scheduler_get_home( the_thread );
 
   _Thread_queue_Context_clear_priority_updates( queue_context );
@@ -534,6 +536,7 @@ RTEMS_INLINE_ROUTINE void _Scheduler_Release_job(
     deadline,
     queue_context
   );
+  pspm_smp_end_count();
 }
 
 /**
