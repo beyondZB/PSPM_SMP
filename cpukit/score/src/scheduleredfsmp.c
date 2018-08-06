@@ -237,7 +237,10 @@ void _Scheduler_EDF_SMP_Tick(
        * the task priority should be set as ceil priority.
        */
       else if(executing->cpu_time_budget == rtems_configuration_get_ticks_per_timeslice() - 1)
+      {
           _Scheduler_EDF_SMP_change_priority(executing, 20);
+          printf("oh noooooooooooooooooooooooooooooooooooooooooooooooooooooo\n");
+      }
       break;
 
     #if defined(RTEMS_SCORE_THREAD_ENABLE_SCHEDULER_CALLOUT)

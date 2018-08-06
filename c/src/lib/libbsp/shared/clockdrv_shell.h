@@ -135,7 +135,7 @@ rtems_isr Clock_isr(
 {
 #endif
 #include <rtems/score/scheduleredfsmp.h>
-  pspm_smp_start_count();
+//  pspm_smp_start_count();
   /* added by wanbo, This is the time interrupts function for smp rtems */
   /*
    *  Accurate count of ISRs
@@ -193,7 +193,7 @@ rtems_isr Clock_isr(
       Clock_driver_timecounter_tick();
     #endif
   #endif
-  pspm_smp_end_count();
+//  pspm_smp_end_count();
 }
 
 #ifdef Clock_driver_support_shutdown_hardware

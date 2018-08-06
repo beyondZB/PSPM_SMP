@@ -122,7 +122,7 @@ rtems_task Init( rtems_task_argument ignored )
   directive_failed( status, "rtems_task_delete of INIT");
 }
 
-#define CONFIGURE_SCHEDULER_PRIORITY
+#define CONFIGURE_SCHEDULER_EDF
 /* configuration information */
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_SIMPLE_CONSOLE_DRIVER
