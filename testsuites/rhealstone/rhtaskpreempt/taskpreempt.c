@@ -7,7 +7,6 @@
 #include <timesys.h>
 #include <rtems/btimer.h>
 #include <rtems/rtems/clock.h>
-#include <rtems/score/overhead_measurement.h>
 
 const char rtems_test_name[] = "RHTASKPREEMPT";
 
