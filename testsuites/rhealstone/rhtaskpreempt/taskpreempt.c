@@ -7,6 +7,7 @@
 #include <timesys.h>
 #include <rtems/btimer.h>
 #include <rtems/rtems/clock.h>
+#include <rtems/score/overhead_measurement.h>
 
 const char rtems_test_name[] = "RHTASKPREEMPT";
 
@@ -122,6 +123,7 @@ rtems_task Init( rtems_task_argument ignored )
   directive_failed( status, "rtems_task_delete of INIT");
 }
 
+#define CONFIGURE_SCHEDULER_EDF_SMP
 /* configuration information */
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_SIMPLE_CONSOLE_DRIVER
