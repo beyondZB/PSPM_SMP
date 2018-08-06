@@ -7,7 +7,6 @@
 #include <timesys.h>
 #include <rtems/btimer.h>
 #include <rtems/rtems/clock.h>
-#include <rtems/score/overhead_measurement.h>
 
 const char rtems_test_name[] = "RHTASKPREEMPT";
 
@@ -20,33 +19,56 @@ rtems_task Init( rtems_task_argument ignored );
 rtems_id           Task_id[2];
 rtems_name         Task_name[2];
 
-uint32_t           telapsed;          /* total time elapsed during benchmark */
-uint32_t           tloop_overhead;    /* overhead of loops */
-uint32_t           tswitch_overhead;  /* overhead of time it takes to switch
+uint64_t           telapsed = 0;          /* total time elapsed during benchmark */
+uint64_t           tloop_overhead = 0;    /* overhead of loops */
+uint64_t           tswitch_overhead = 0;  /* overhead of time it takes to switch
                                        * from TA02 to TA01, includes rtems_suspend
                                        * overhead
                                        */
-unsigned long      count1;
+unsigned long      count1 = 0;
+unsigned long      count2 = 0;
 rtems_status_code  status;
-uint32_t start_t;
+uint64_t start_t = 0;
+uint64_t temp_swith = 0;
+uint64_t one_tswitch_overhead = 0;
 
-#define INIT_TIME {start_t = rtems_clock_get_uptime_nanoseconds();}
+#define INIT_TIMER {start_t = rtems_clock_get_uptime_nanoseconds();}
 #define GET_TIME(overhead) {overhead = rtems_clock_get_uptime_nanoseconds() - start_t;}
+
+#define preempt_put_time( _message, _total_time, \
+    _iterations, _loop_overhead, _overhead ) \
+{\
+  printf("_total_time=%lld\t_literations=%d\t_loop_overheas=%lld\t_overhead=%lld\n", \
+      _total_time, _iterations, _loop_overhead, _overhead);\
+  printf( \
+      "%s - %" PRId64 "\n", \
+      (_message), \
+      (((_total_time) - (_loop_overhead) - (_overhead)) / (_iterations)) \
+      );\
+}
 
 rtems_task Task01( rtems_task_argument ignored )
 {
   /* Start up TA02, get preempted */
   status = rtems_task_start( Task_id[1], Task02, 0);
   directive_failed( status, "rtems_task_start of TA02");
+  GET_TIME(temp_swith);
+  printf("temp_swith = %lld\n", temp_swith);
 
-//  tswitch_overhead = benchmark_timer_read();
-  GET_TIME(tswitch_overhead);
-
-//  benchmark_timer_initialize();
-  INIT_TIME;
+  //  benchmark_timer_initialize();
+  INIT_TIMER;
   /* Benchmark code */
   for ( count1 = 0; count1 < BENCHMARKS; count1++ ) {
     rtems_task_resume( Task_id[1] );  /* Awaken TA02, preemption occurs */
+  }
+
+  /* measure the tsitch_overhead */
+  for ( count2 = 0; count2 < BENCHMARKS; count2++ ) {
+    rtems_task_resume( Task_id[1] );  /* Awaken TA02, preemption occurs */
+    //  tswitch_overhead = benchmark_timer_read();
+    GET_TIME(one_tswitch_overhead);
+//    printf("%d\n", one_tswitch_overhead);
+    tswitch_overhead += one_tswitch_overhead;
   }
 
   /* Should never reach here */
@@ -55,19 +77,25 @@ rtems_task Task01( rtems_task_argument ignored )
 
 rtems_task Task02( rtems_task_argument ignored )
 {
-  /* Find overhead of task switch back to TA01 (not a preemption) */
-//  benchmark_timer_initialize();
-  INIT_TIME;
+  INIT_TIMER;
   rtems_task_suspend( RTEMS_SELF );
 
   /* Benchmark code */
   for ( ; count1 < BENCHMARKS - 1; ) {
     rtems_task_suspend( RTEMS_SELF );
   }
-
 //  telapsed = benchmark_timer_read();
   GET_TIME(telapsed);
-  put_time(
+
+  rtems_task_suspend( RTEMS_SELF );
+  /* Find overhead of task switch back to TA01 (not a preemption) */
+  for ( ; count2 < BENCHMARKS - 1; ) {
+    //  benchmark_timer_initialize();
+    INIT_TIMER;
+    rtems_task_suspend( RTEMS_SELF );
+  }
+
+  preempt_put_time(
      "Rhealstone: Task Preempt",
      telapsed,                     /* Total time of all benchmarks */
      BENCHMARKS - 1,               /* BENCHMARKS - 1 total preemptions */
@@ -109,7 +137,7 @@ rtems_task Init( rtems_task_argument ignored )
 
   /* Find loop overhead */
 //  benchmark_timer_initialize();
-  INIT_TIME;
+  INIT_TIMER;
   for ( count1 = 0; count1 < ( BENCHMARKS * 2 ) - 1; count1++ ) {
      /* no statement */ ;
   }
