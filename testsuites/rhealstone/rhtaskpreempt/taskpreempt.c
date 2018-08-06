@@ -119,7 +119,6 @@ rtems_task Init( rtems_task_argument ignored )
   status = rtems_task_start( Task_id[0], Task01, 0 );
   directive_failed( status, "rtems_task_start of TA01");
 
-  printf("tswitch_overhead = %d, cur_time = %d\n", tswitch_overhead, rtems_clock_get_uptime_nanoseconds());
   status = rtems_task_delete( RTEMS_SELF );
   directive_failed( status, "rtems_task_delete of INIT");
 }
