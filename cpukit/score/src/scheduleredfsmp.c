@@ -180,6 +180,7 @@ void _Scheduler_EDF_SMP_Tick(
   Thread_Control          *executing
 )
 {
+  printf("oh nooooooooooooooooooooooooooooooooooooooooooooo tick()\n");
 //  pspm_smp_start_count();
   (void) scheduler;
 
@@ -206,6 +207,7 @@ void _Scheduler_EDF_SMP_Tick(
     #if defined(RTEMS_SCORE_THREAD_ENABLE_EXHAUST_TIMESLICE)
       case THREAD_CPU_BUDGET_ALGORITHM_EXHAUST_TIMESLICE:
     #endif
+      printf("oh nooooooooooooooooooooooooooooooooooooooooooooo tick()change priority\n");
       /*
        * if time_slice is finished.
        */
@@ -268,6 +270,7 @@ void _Scheduler_EDF_SMP_Rlease_job(
   Thread_queue_Context    *queue_context
 )
 {
+  printf("oh nooooooooooooooooooooooooooooooooooooooooooooo rlease_job\n");
   (void) scheduler;
 
   _Thread_Wait_acquire_critical( the_thread, queue_context );
