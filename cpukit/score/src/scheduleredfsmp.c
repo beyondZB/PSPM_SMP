@@ -26,13 +26,18 @@
  * @brief This is the core structure to connect PSPM SMP to rtems. Important !!!
  */
 PSPM_SMP pspm_smp_task_manager;
-uint64_t start, end, total;
-uint64_t count=0;
+uint64_t start = 0, end = 0, total = 0;
+uint64_t count = 0;
+uint64_t s_count = 0;
+struct _Thread_Control *s_exe = 0;
+
 
 void pspm_smp_start_count()
 {
   start = rtems_clock_get_uptime_nanoseconds();
 //  printf("s: %llu\t%d\t%llu\n", start, count, _Thread_Executing);
+//  s_count++;
+//  s_exe = _Thread_Executing;
 }
 
 void pspm_smp_end_count()
@@ -41,6 +46,16 @@ void pspm_smp_end_count()
 //  printf("e: %llu\t%d\t%llu\n", end, count, _Thread_Executing);
   total += end - start;
   count++;
+//  if(s_count != count)
+//  {
+//    printf("measurement count error!!!!!!!!!!!!!!!!!!!\n\n");
+//    while(true);
+//  }
+//  if(_Thread_Executing != s_exe)
+//  {
+//    printf("measurement executing error!!!!!!!!!!!!!!!!!!!!!!\n\n");
+//    while(true);
+//  }
 }
 
 void pspm_smp_print_count()

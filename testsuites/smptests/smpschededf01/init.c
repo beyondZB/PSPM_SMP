@@ -18,6 +18,7 @@
 
 #include <rtems.h>
 #include <rtems/cpuuse.h>
+#include <rtems/score/overhead_measurement.h>
 
 #include "tmacros.h"
 
@@ -53,14 +54,14 @@ static void t1(rtems_task_argument arg)
 {
   test_context *ctx = (test_context *) arg;
 
-  t(ctx, 50, 25000000);
+  t(ctx, 100, 50000000);
 }
 
 static void t2(rtems_task_argument arg)
 {
   test_context *ctx = (test_context *) arg;
 
-  t(ctx, 75, 30000000);
+  t(ctx, 200, 70000000);
 }
 
 static void test(test_context *ctx)
@@ -79,7 +80,7 @@ static void test(test_context *ctx)
 
   sc = rtems_task_create(
     rtems_build_name('T', '2', ' ', ' '),
-    2,
+    3,
     RTEMS_MINIMUM_STACK_SIZE,
     RTEMS_DEFAULT_MODES,
     RTEMS_DEFAULT_ATTRIBUTES,
@@ -98,7 +99,7 @@ static void test(test_context *ctx)
 
   rtems_cpu_usage_reset();
 
-  sc = rtems_task_wake_after(50 * 75);
+  sc = rtems_task_wake_after(200 * 1000);
   rtems_test_assert(sc == RTEMS_SUCCESSFUL);
 
   sc = rtems_task_suspend(ctx->task[0]);
@@ -119,6 +120,7 @@ static void Init(rtems_task_argument arg)
 
   test(ctx);
 
+  pspm_smp_print_count();
   TEST_END();
   rtems_test_exit(0);
 }
@@ -129,18 +131,19 @@ static void Init(rtems_task_argument arg)
 #define CONFIGURE_APPLICATION_NEEDS_SIMPLE_CONSOLE_DRIVER
 
 #define CONFIGURE_MAXIMUM_TASKS 3
-#define CONFIGURE_MAXIMUM_PERIODS 2
+#define CONFIGURE_MAXIMUM_PERIODS 255
 
 #define CONFIGURE_MAXIMUM_PROCESSORS 1
 
-#define CONFIGURE_SCHEDULER_EDF_SMP
+#define CONFIGURE_SCHEDULER_PRIORITY_SMP
+//#define CONFIGURE_SCHEDULER_EDF_SMP
 
 #include <rtems/scheduler.h>
 
-RTEMS_SCHEDULER_EDF_SMP(a, CONFIGURE_MAXIMUM_PROCESSORS);
+//RTEMS_SCHEDULER_CONTEXT_EDF_SMP(a, CONFIGURE_MAXIMUM_PROCESSORS);
 
-#define CONFIGURE_SCHEDULER_TABLE_ENTRIES \
-  RTEMS_SCHEDULER_TABLE_EDF_SMP(a, rtems_build_name('E', 'D', 'F', ' '))
+//#define CONFIGURE_SCHEDULER_CONTROLS \
+//  RTEMS_SCHEDULER_CONTROL_EDF_SMP(a, rtems_build_name('E', 'D', 'F', ' '))
 
 #define CONFIGURE_SCHEDULER_ASSIGNMENTS \
   RTEMS_SCHEDULER_ASSIGN(0, RTEMS_SCHEDULER_ASSIGN_PROCESSOR_MANDATORY)
